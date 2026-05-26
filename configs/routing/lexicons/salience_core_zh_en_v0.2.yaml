@@ -1,0 +1,276 @@
+schema_version: salience.lexicon.v0.2
+lexicon_id: salience_core_zh_en_v0.2
+lexicon_version: "0.2"
+description: >
+  Seed weighted salience lexicon for router v0.2 sidecar evaluation. This is
+  not a complete hand-maintained NLP taxonomy. It is a small integration seed
+  that should be expanded from existing research/resources and calibration.
+
+groups:
+  preference_terms:
+    base_weight: 4
+    polarity: positive
+    source: local_seed
+    license_note: project-authored seed terms
+    confidence: seed
+    english:
+      - prefer
+      - like
+      - love
+      - hate
+      - enjoy
+      - want
+      - wants
+      - need
+      - needs
+      - hope
+      - hopes
+      - wish
+      - care about
+    chinese:
+      - 喜欢
+      - 讨厌
+      - 想要
+      - 需要
+      - 希望
+      - 在意
+  constraint_terms:
+    base_weight: 5
+    polarity: neutral
+    source: local_seed
+    license_note: project-authored seed terms
+    confidence: seed
+    english:
+      - must
+      - cannot
+      - can't
+      - should
+      - required
+      - requirement
+      - deadline
+      - budget
+      - cost
+      - privacy
+      - constraint
+      - limit
+      - blocked
+    chinese:
+      - 必须
+      - 不能
+      - 应该
+      - 要求
+      - 截止
+      - 预算
+      - 成本
+      - 隐私
+      - 约束
+      - 限制
+      - 卡住
+  risk_terms:
+    base_weight: 5
+    polarity: negative
+    source: local_seed
+    license_note: project-authored seed terms
+    confidence: seed
+    english:
+      - failed
+      - failure
+      - error
+      - unsafe
+      - risk
+      - worried
+      - worry
+      - afraid
+      - problem
+      - issue
+      - crash
+      - broken
+      - wrong
+    chinese:
+      - 失败
+      - 错误
+      - 风险
+      - 担心
+      - 害怕
+      - 问题
+      - 崩溃
+      - 坏了
+      - 不对
+  relation_terms:
+    base_weight: 3
+    polarity: neutral
+    source: local_seed
+    license_note: project-authored seed terms
+    confidence: seed
+    english:
+      - wife
+      - husband
+      - friend
+      - colleague
+      - boss
+      - manager
+      - mentor
+      - teacher
+      - student
+      - partner
+      - praise
+      - praised
+      - criticize
+      - criticized
+      - trust
+      - learn from
+    chinese:
+      - 妻子
+      - 丈夫
+      - 朋友
+      - 同事
+      - 上司
+      - 老师
+      - 学生
+      - 伙伴
+      - 夸奖
+      - 批评
+      - 信任
+      - 学习
+  project_tool_terms:
+    base_weight: 3
+    polarity: neutral
+    source: local_seed
+    license_note: project-authored seed terms
+    confidence: seed
+    english:
+      - project
+      - api
+      - provider
+      - script
+      - model
+      - database
+      - router
+      - prompt
+      - schema
+      - benchmark
+      - dataset
+      - experiment
+      - workflow
+      - memory
+    chinese:
+      - 项目
+      - 接口
+      - 脚本
+      - 模型
+      - 数据库
+      - 路由
+      - 提示词
+      - 架构
+      - 实验
+      - 数据集
+      - 工作流
+      - 记忆
+  event_nominal_terms:
+    base_weight: 3
+    polarity: neutral
+    source: local_seed
+    license_note: project-authored seed terms
+    confidence: seed
+    english:
+      - meeting
+      - launch
+      - decision
+      - plan
+      - agreement
+      - conflict
+      - review
+      - test
+      - task
+      - call
+      - appointment
+    chinese:
+      - 会议
+      - 发布
+      - 决定
+      - 计划
+      - 协议
+      - 冲突
+      - 审核
+      - 测试
+      - 任务
+      - 约定
+  affect_terms:
+    base_weight: 2
+    polarity: neutral
+    source: local_seed
+    license_note: project-authored seed terms
+    confidence: seed
+    english:
+      - happy
+      - angry
+      - proud
+      - shame
+      - excited
+      - sad
+      - annoyed
+      - frustrated
+      - love
+      - hate
+    chinese:
+      - 高兴
+      - 生气
+      - 自豪
+      - 羞耻
+      - 兴奋
+      - 难过
+      - 烦
+      - 沮丧
+      - 喜爱
+      - 讨厌
+  evidence_directness_terms:
+    base_weight: 3
+    polarity: neutral
+    source: local_seed
+    license_note: project-authored seed terms
+    confidence: seed
+    english:
+      - said
+      - says
+      - stated
+      - told
+      - wrote
+      - asked
+      - answered
+      - decided
+      - reported
+      - observed
+    chinese:
+      - 说
+      - 表示
+      - 告诉
+      - 写
+      - 问
+      - 回答
+      - 决定
+      - 报告
+      - 观察
+  low_value_terms:
+    base_weight: -5
+    polarity: low_value
+    source: local_seed
+    license_note: project-authored seed terms
+    confidence: seed
+    english:
+      - thanks
+      - thank you
+      - hello
+      - hey
+      - okay
+      - ok
+      - lol
+      - haha
+      - good morning
+      - good evening
+    chinese:
+      - 谢谢
+      - 你好
+      - 好的
+      - 哈哈
+      - 早上好
+      - 晚上好

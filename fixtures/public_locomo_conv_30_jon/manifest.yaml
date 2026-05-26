@@ -1,0 +1,24 @@
+manifest:
+  workspace_id: public_locomo_conv_30_jon
+  dataset: locomo
+  record_id: conv-30
+  modeled_user_id: public_locomo_conv_30_jon
+  target_participant: Jon
+  included_participants:
+    - Jon
+    - Gina
+  excluded_participants: []
+  subject_lock_rule: "Only information about Jon may become Jon's portrait. Gina may appear only as relationship object, context, or evidence."
+  source_paths:
+    raw_source: E:/code/codex/personal-semantic-memory-lab/data/public-seed-v0.2/raw/locomo/locomo10.json
+    evidence_registry: evidence/evidence.jsonl
+    source_manifest: evidence/source_manifest.jsonl
+    preprocessing_decisions: memory/preprocessing_decisions.jsonl
+    normalized_candidates: portrait/normalized_candidates.jsonl
+    reviewed_units: portrait/reviewed_units.jsonl
+    current_portrait_md: portrait/current_portrait.md
+    current_portrait_json: portrait/current_portrait.json
+    graph_nodes: graph/nodes.jsonl
+    graph_edges: graph/edges.jsonl
+  privacy_class: public
+  notes: "Phase 2 pilot workspace. Public LoCoMo conv-30. Target participant locked to Jon."

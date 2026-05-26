@@ -1,0 +1,132 @@
+{
+  "schema_version": "step1.build_manifest.v0.1",
+  "run_id": "s1-build:locomo:conv-30:jon:2026-05-18-full-rebuild",
+  "workflow": "s0_to_s1_adapter",
+  "run_type": "evidence_build",
+  "started_at": "2026-05-18T05:37:46.991754+00:00",
+  "completed_at": "2026-05-18T05:37:46.991754+00:00",
+  "status": "completed",
+  "workspace_id": "public_locomo_conv_30_jon",
+  "modeled_subject_id": "Jon",
+  "target_participant": "Jon",
+  "adapter_name": "locomo_conversation_adapter",
+  "adapter_version": "v0.1-workflow-pilot",
+  "adapter_route": {
+    "raw_source_id": "raw:locomo:conv-30:dialogue",
+    "adapter_name": "locomo_conversation_adapter",
+    "adapter_version": "v0.1-workflow-pilot",
+    "adapter_family": "conversation_dataset_adapter",
+    "reason": "S0B marks the LoCoMo conv-30 dialogue source as high-organization text with session/dia_id/speaker structure.",
+    "required_preconditions": [
+      "inclusion_decision=include",
+      "processing_status=ready_for_s1_intake"
+    ],
+    "warnings": [
+      "LoCoMo day/turn refs are source_specific_ref/display_ref, not universal S1 evidence semantics."
+    ]
+  },
+  "input_s0b_assets": {
+    "bundle": "raw/organization/bundle.json",
+    "raw_sources": "raw/organization/raw_sources.jsonl"
+  },
+  "input_raw_sources": [
+    {
+      "raw_source_id": "raw:locomo:conv-30:dialogue",
+      "path": "data/public-seed-v0.2/raw/locomo/locomo10.json",
+      "hash_sha256": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4",
+      "inclusion_decision": "include"
+    },
+    {
+      "raw_source_id": "raw:locomo:conv-30:observations",
+      "path": "data/public-seed-v0.2/raw/locomo/locomo10.json",
+      "hash_sha256": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4",
+      "inclusion_decision": "background_only"
+    }
+  ],
+  "input_raw_source_hashes": {
+    "data/public-seed-v0.2/raw/locomo/locomo10.json": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4",
+    "raw/organization/bundle.json": "5411a5ad62f3d1f3fc5b63c99bc0f833b72cd6e5688772d473ec0279eb770bea",
+    "raw/organization/raw_sources.jsonl": "abb88398e78c9cee0b0d0a07917d1aadb50e88a5b4153ca61ef6b44d76a90617"
+  },
+  "output_assets": {
+    "source_manifest": "evidence/source_manifest.jsonl",
+    "evidence_registry": "evidence/evidence.jsonl"
+  },
+  "output_hashes": {
+    "evidence/source_manifest.jsonl": "da9ee65097e69e1e01e9ce4ce14adde9f9154fbfeacf7d4363f4f43f9afe75b9",
+    "evidence/evidence.jsonl": "1ec9e616d09bffa0ee7736538e9b5816292fb1100babe60643de85884b23ae6a"
+  },
+  "output_counts": {
+    "source_manifest_items": 2,
+    "evidence_items": 369
+  },
+  "coverage_policy": {
+    "mode": "full_raw_record",
+    "included_sessions": [
+      "session_1",
+      "session_2",
+      "session_3",
+      "session_4",
+      "session_5",
+      "session_6",
+      "session_7",
+      "session_8",
+      "session_9",
+      "session_10",
+      "session_11",
+      "session_12",
+      "session_13",
+      "session_14",
+      "session_15",
+      "session_16",
+      "session_17",
+      "session_18",
+      "session_19"
+    ],
+    "excluded_sessions": [],
+    "included_source_specific_refs": [],
+    "excluded_source_specific_refs": [],
+    "expected_evidence_count": 369,
+    "observed_evidence_count": 369,
+    "coverage_notes": "Rebuilt Jon evidence by parsing every supported dialogue turn from session_1 through session_19 in LoCoMo conv-30."
+  },
+  "ref_policy": {
+    "canonical_evidence_ref_example": "evidence:locomo:conv-30:D1:4",
+    "canonical_evidence_ref_note": "This is a LoCoMo adapter example, not a universal ref naming strategy.",
+    "source_specific_ref_example": "D1:4",
+    "display_ref_example": "LoCoMo conv-30 D1:4",
+    "compatibility_aliases": "Transitional aliases preserve old D<day>:<turn> S2 refs. New artifacts should write canonical evidence_ref."
+  },
+  "locator_policy": {
+    "kind": "conversation_turn",
+    "fields": [
+      "dataset",
+      "record_id",
+      "session",
+      "session_index",
+      "day",
+      "day_index",
+      "turn_index",
+      "speaker",
+      "timestamp"
+    ],
+    "note": "conversation_turn is one locator type, not the universal evidence model."
+  },
+  "duplicate_policy": "fail",
+  "validation_summary": {
+    "s0b_assets_present": true,
+    "raw_source_file_present": true,
+    "source_manifest_items": 2,
+    "evidence_items": 369,
+    "target_utterance_count": 185,
+    "other_utterance_count": 184
+  },
+  "limitations": [
+    "Only S0B and S1 evidence were rebuilt; S1 memory units and S2 assets were intentionally not regenerated.",
+    "Existing S2 portrait/graph/packet assets may have been produced from the previous 100-item evidence subset and should be audited before reuse.",
+    "Compatibility aliases are transitional and should not be the preferred write path for new artifacts."
+  ],
+  "warnings": [
+    "Do not treat LoCoMo D<day>:<turn> as the generic Step 1 evidence model."
+  ]
+}

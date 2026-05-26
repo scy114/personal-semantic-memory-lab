@@ -1,0 +1,171 @@
+schema_version: routing.lexicon.v0.1
+lexicon_id: basic_zh_en_v0.1
+lexicon_version: "0.1"
+description: >
+  Minimal project-local examples for dry-run routing feature extraction.
+  This is not intended to become a large hand-maintained lexicon. Future
+  versions should evaluate mature open-source/GitHub NLP resources.
+
+term_groups:
+  role_terms:
+    english:
+      - wife
+      - husband
+      - teacher
+      - boss
+      - manager
+      - client
+      - friend
+      - colleague
+      - student
+      - mentor
+      - partner
+    chinese:
+      - 妻子
+      - 丈夫
+      - 老师
+      - 上司
+      - 领导
+      - 同事
+      - 朋友
+      - 客户
+      - 学生
+      - 导师
+      - 伙伴
+  pronoun_terms:
+    english:
+      - i
+      - you
+      - he
+      - she
+      - they
+      - this
+      - that
+      - my
+      - his
+      - her
+      - their
+    chinese:
+      - 我
+      - 你
+      - 他
+      - 她
+      - 他们
+      - 她们
+      - 这个
+      - 那个
+      - 对方
+      - 我的
+      - 他的
+      - 她的
+  first_person_terms:
+    english:
+      - i
+      - me
+      - my
+      - mine
+      - we
+      - us
+      - our
+      - ours
+    chinese:
+      - "\u6211"
+      - "\u6211\u7684"
+      - "\u6211\u4eec"
+      - "\u6211\u4eec\u7684"
+  other_person_terms:
+    english:
+      - you
+      - your
+      - yours
+      - he
+      - him
+      - his
+      - she
+      - her
+      - hers
+      - they
+      - them
+      - their
+      - theirs
+    chinese:
+      - "\u4f60"
+      - "\u4f60\u7684"
+      - "\u4f60\u4eec"
+      - "\u4f60\u4eec\u7684"
+      - "\u4ed6"
+      - "\u4ed6\u7684"
+      - "\u5979"
+      - "\u5979\u7684"
+      - "\u4ed6\u4eec"
+      - "\u5979\u4eec"
+      - "\u5bf9\u65b9"
+  logical_markers:
+    english:
+      - because
+      - therefore
+      - but
+      - although
+      - if
+      - unless
+      - however
+      - otherwise
+      - instead
+    chinese:
+      - 因为
+      - 所以
+      - 但是
+      - 虽然
+      - 如果
+      - 否则
+      - 不过
+      - 于是
+      - 算了
+      - 还是
+  importance_terms:
+    english:
+      - important
+      - must
+      - cannot fail
+      - personally
+      - urgent
+      - worried
+      - treasured
+      - high stakes
+      - cannot be wrong
+    chinese:
+      - 重要
+      - 必须
+      - 不能有闪失
+      - 亲自
+      - 赶紧
+      - 担心
+      - 珍藏
+      - 不能错
+      - 非常重视
+  event_terms:
+    english:
+      - said
+      - asked
+      - decided
+      - planned
+      - worried
+      - hoped
+      - required
+      - prepared
+      - changed
+      - refused
+      - wrote
+      - wants
+      - needs
+    chinese:
+      - 说
+      - 要求
+      - 决定
+      - 准备
+      - 认为
+      - 担心
+      - 希望
+      - 计划
+      - 拒绝
+      - 写

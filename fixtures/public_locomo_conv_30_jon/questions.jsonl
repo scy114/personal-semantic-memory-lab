@@ -1,0 +1,3 @@
+{"query_id":"q01-current_state","question":"Jon 最近在忙什么？","expected_answer_type":"state","route":"hybrid","reason":"需要当前状态、项目进展、近期活动与证据支撑。","needs_graph":true,"needs_temporal_filter":true}
+{"query_id":"q02-temporal_boundary","question":"Jon 现在还只是刚失业准备创业吗？","expected_answer_type":"state","route":"evidence_first","reason":"问题核心是时间边界与状态演化，需要优先检查早期与后期证据是否冲突。","needs_graph":true,"needs_temporal_filter":true}
+{"query_id":"q03-hallucination_guardrail","question":"Jon 最近是不是在准备金融行业面试？","expected_answer_type":"fact","route":"evidence_first","reason":"这是一个易幻觉的封闭事实问题，需要检查是否存在支持金融面试的证据，并给出反证边界。","needs_graph":true,"needs_temporal_filter":true}

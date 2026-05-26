@@ -1,0 +1,175 @@
+schema_version: memory_proposal_router.policy.v0.21.candidate
+policy_id: memory-proposal-router-policy:v0.21:heuristic-salience-calibrated-candidate
+policy_version: 0.21-candidate
+router_backend: heuristic_salience_v0_21_calibrated
+feature_extractor: salience_v0_21_calibrated
+feature_extractor_version: memory_proposal_features.salience.v0.21.calibrated
+router_version: memory_proposal_router.heuristic_salience_backend.v0.21.calibrated
+matcher_version: salience_zh_en_phrase_token.v0.2
+route_confidence_type: heuristic_score_calibrated
+target_tasks:
+  - s1_memory_candidate
+  - s2_portrait_candidate
+blocked_target_tasks:
+  - s3_hypothesis_candidate
+weights:
+  value_score: 0.944
+  entity_salience_score: 1.366
+  domain_term_score: 1.015
+  keyphrase_score: 0.567
+  affect_score: 0.226
+  risk_score: 0.766
+  complexity_score: 0.558
+  low_value_score: 1.341
+thresholds:
+  s1:
+    low_value_skip_floor: 5.869
+    low_value_useful_floor: 2.582
+    skip_useful_floor: 2.217
+    skip_low_value_floor: 3.439
+    script_useful_floor: 3.007
+    weak_useful_floor: 3.417
+    weak_stress_floor: 4.856
+    weak_risk_floor: 3.526
+    strong_useful_floor: 7.975
+    strong_stress_floor: 6.169
+    strong_risk_floor: 5.104
+  s2:
+    low_value_skip_floor: 5.816
+    low_value_useful_floor: 2.485
+    skip_useful_floor: 1.362
+    skip_low_value_floor: 5.158
+    script_useful_floor: 2.757
+    weak_useful_floor: 2.693
+    weak_stress_floor: 3.834
+    weak_risk_floor: 3.071
+    strong_useful_floor: 7.382
+    strong_stress_floor: 3.931
+    strong_risk_floor: 3.994
+  route_score_max: 12
+routes:
+  background:
+    recommended_route: skip_or_background_only
+    fallback_route: weak_llm_proposal
+    cost_class: none
+  preprocessing_required:
+    recommended_route: split_or_segment_first
+    fallback_route: weak_llm_proposal
+    cost_class: low
+  script:
+    recommended_route: script_only
+    fallback_route: weak_llm_proposal
+    cost_class: low
+  weak:
+    recommended_route: weak_llm_proposal
+    fallback_route: strong_llm_proposal
+    cost_class: medium
+  strong:
+    recommended_route: strong_llm_proposal
+    fallback_route: human_review
+    cost_class: high
+  human:
+    recommended_route: human_review
+    fallback_route: human_review
+    cost_class: high
+calibration:
+  schema_version: routing.v021_policy_calibration.v0.1
+  method: proxy_warm_start_search
+  objective: 1.227
+  exact_match_weighted: 0.411
+  route_penalty_weighted: 1.236
+  penalty_terms_weighted: 0.208
+  best_candidate_id: candidate_000
+  candidate_count: 157
+  training_example_count: 320
+  source_summary:
+    feature_matrix_files:
+      -
+        path: "E:\\code\\codex\\personal-semantic-memory-lab\\users\\_acceptance_s1_to_s2_pepys_20260522_235415\\routing\\v021_feature_matrix_chinese_dimlex_smoke\\v021_feature_matrix.jsonl"
+        sha256: 32f8f1f68644aee15215a9d0f42dfe818cdf02702f9d708c7327aae24f7e828e
+        row_count: 20
+      -
+        path: "E:\\code\\codex\\personal-semantic-memory-lab\\users\\_acceptance_s1_to_s2_pepys_20260522_235415\\routing\\v021_feature_matrix_external_resources_smoke\\v021_feature_matrix.jsonl"
+        sha256: 3e7c93381aad1af35c84d3e674350471bdc50bedb4712b36c04429be5cea70e8
+        row_count: 20
+      -
+        path: "E:\\code\\codex\\personal-semantic-memory-lab\\users\\_acceptance_s1_to_s2_pepys_20260522_235415\\routing\\v021_feature_matrix_full\\v021_feature_matrix.jsonl"
+        sha256: 9970031f8391d67437fd7f9ae790b3f8808dbc40fa5826e977d1d247206914f7
+        row_count: 373
+      -
+        path: "E:\\code\\codex\\personal-semantic-memory-lab\\users\\_acceptance_s1_to_s2_pepys_20260522_235415\\routing\\v021_feature_matrix_smoke\\v021_feature_matrix.jsonl"
+        sha256: 13f9e2c004de219af7e3a47b3c420daa3afa00f86db78f37a37ce84c037d6275
+        row_count: 20
+      -
+        path: "E:\\code\\codex\\personal-semantic-memory-lab\\users\\_experiment_chinese_s0b_s1_router_20260522\\routing\\v021_feature_matrix_full\\v021_feature_matrix.jsonl"
+        sha256: c7ae7edcc4347fc3b23275770f92b5cc96345812352a43eee96e4b8fd6211504
+        row_count: 9
+      -
+        path: "E:\\code\\codex\\personal-semantic-memory-lab\\users\\_experiment_locomo_gina_dialogue_proposal_mock_20260521\\routing\\v021_feature_matrix_full\\v021_feature_matrix.jsonl"
+        sha256: ee2c8b21ac41d9cced8630841e4cbc1faf28cde33848978a563b3e87e6f4146e
+        row_count: 1885
+      -
+        path: "E:\\code\\codex\\personal-semantic-memory-lab\\users\\_v01_blind_generic_text_section_20260520\\routing\\v021_feature_matrix_full\\v021_feature_matrix.jsonl"
+        sha256: 98a54c921869789d37cec4a53fb72558686a4af26436bb72f4135b5e1f392405
+        row_count: 6
+    comparison_files:
+      -
+        path: "E:\\code\\codex\\personal-semantic-memory-lab\\users\\_acceptance_s1_to_s2_pepys_20260522_235415\\routing\\v021_mode_comparison_full\\v021_mode_comparison_rows.jsonl"
+        sha256: b6ef4fbb89f94416ac03683b9b1c2de1bd75769b79bec0d087faca387cb0392c
+        row_count: 373
+      -
+        path: "E:\\code\\codex\\personal-semantic-memory-lab\\users\\_acceptance_s1_to_s2_pepys_20260522_235415\\routing\\v021_mode_comparison_smoke\\v021_mode_comparison_rows.jsonl"
+        sha256: b196fb99920dd9ba360f7addf7af0dc7ae4de52c5062d9a9ac04f880705e7bd4
+        row_count: 20
+      -
+        path: "E:\\code\\codex\\personal-semantic-memory-lab\\users\\_experiment_chinese_s0b_s1_router_20260522\\routing\\v021_mode_comparison_full\\v021_mode_comparison_rows.jsonl"
+        sha256: 8175fa6c07cd39e4f5d5e94a392e630038780664acff901a2eff3260ee970585
+        row_count: 9
+      -
+        path: "E:\\code\\codex\\personal-semantic-memory-lab\\users\\_experiment_locomo_gina_dialogue_proposal_mock_20260521\\routing\\v021_mode_comparison_full\\v021_mode_comparison_rows.jsonl"
+        sha256: c665ebcb638d3984c246f33783fedb75be436f72415dd212e630d4dca8d98685
+        row_count: 1885
+      -
+        path: "E:\\code\\codex\\personal-semantic-memory-lab\\users\\_v01_blind_generic_text_section_20260520\\routing\\v021_mode_comparison_full\\v021_mode_comparison_rows.jsonl"
+        sha256: df2fe547cf04d2453eb873a0f66f286266fd00094fb8058c47066823e4994211
+        row_count: 6
+    external_dataset_counts:
+      xdailydialog: 40
+      dialogsum: 40
+      claimbuster: 40
+      onestopenglish: 40
+    external_dataset_notes:
+      lifelog_dialog:
+        dataset_id: lifelog_dialog
+        source_path: "E:\\code\\codex\\personal-semantic-memory-lab\\external_references\\routing_calibration_datasets\\Lifelog-DiaLog\\DiaLog_v1.zip"
+        status: label_only
+        reason: "local checkout does not expose dialogue text beyond DiaLog.json event labels"
+        json_exists: true
+        label_exists: true
+        turn_sample: 4
+        event_labels:
+          - Activity
+          - Attending
+          - Commerce_pay
+          - Contacting
+          - Ingestion
+          - Perception_experience
+          - Receiving
+          - Renting
+          - Request
+          - Reserving
+          - Transporting
+          - Wearing
+  notes:
+    - "proxy labels only"
+    - "not route truth"
+    - "not default policy"
+    - "no provider calls"
+guardrails:
+  write_permission: false
+  llm_calls_executed: false
+  proposal_generation_executed: false
+  durable_writes_executed: false
+  automatic_cascade_executed: false
+  support_check_candidate_sets_support_status: false
+  s3_hypothesis_candidate_emitted: false

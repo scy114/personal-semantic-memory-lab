@@ -1,0 +1,221 @@
+{
+  "portrait_id": "portrait-public_locomo_conv_30_jon-v1",
+  "user_id": "public_locomo_conv_30_jon",
+  "target_participant": "Jon",
+  "dataset": "locomo",
+  "record_id": "conv-30",
+  "generated_at": "2026-05-16T00:00:00+08:00",
+  "data_scope": "public dataset pilot, sessions 1-5 only",
+  "approval_policy": "accepted_for_experiment only; no real user approval implied",
+  "provenance_policy": "Every claim points to reviewed portrait units and evidence refs where available.",
+  "core_portrait": [
+    {
+      "claim": "Jon is transitioning from a banker role into a dance-centered business after losing his job.",
+      "unit_ids": [
+        "unit-jon-001",
+        "unit-jon-002",
+        "unit-jon-021"
+      ],
+      "evidence_refs": [
+        "D1:4",
+        "D5:10"
+      ],
+      "confidence": "high",
+      "inference_type": "fact"
+    },
+    {
+      "claim": "Dance is a long-running passion for Jon, tied to joy, escape, freedom, and self-expression.",
+      "unit_ids": [
+        "unit-jon-003",
+        "unit-jon-022"
+      ],
+      "evidence_refs": [
+        "D1:6",
+        "D5:16"
+      ],
+      "confidence": "high",
+      "inference_type": "fact"
+    },
+    {
+      "claim": "Jon prefers contemporary dance while remaining open to multiple dance styles.",
+      "unit_ids": [
+        "unit-jon-004"
+      ],
+      "evidence_refs": [
+        "D1:8"
+      ],
+      "confidence": "high",
+      "inference_type": "fact"
+    },
+    {
+      "claim": "Jon values risk-taking, persistence, and pursuing dreams despite difficulty.",
+      "unit_ids": [
+        "unit-jon-014",
+        "unit-jon-015",
+        "unit-jon-016",
+        "unit-jon-021"
+      ],
+      "evidence_refs": [
+        "D3:13",
+        "D4:3",
+        "D4:5",
+        "D5:10"
+      ],
+      "confidence": "medium",
+      "inference_type": "fact"
+    }
+  ],
+  "current_state": [
+    {
+      "claim": "Jon is building or running a dance studio project and wants it to support dancers of different ages and skill levels.",
+      "unit_ids": [
+        "unit-jon-002",
+        "unit-jon-020"
+      ],
+      "evidence_refs": [
+        "D1:4",
+        "D5:4"
+      ],
+      "confidence": "high",
+      "inference_type": "fact"
+    },
+    {
+      "claim": "Jon is searching for or refining a studio location, with attention to inspiration, natural light, accessibility, size, and floor safety.",
+      "unit_ids": [
+        "unit-jon-006",
+        "unit-jon-007",
+        "unit-jon-011",
+        "unit-jon-012",
+        "unit-jon-013",
+        "unit-jon-017"
+      ],
+      "evidence_refs": [
+        "D1:20",
+        "D1:22",
+        "D2:4",
+        "D2:6",
+        "D3:1",
+        "D4:9"
+      ],
+      "confidence": "medium",
+      "inference_type": "fact"
+    },
+    {
+      "claim": "Jon is actively balancing business work with dance rehearsals, shows, and competitions.",
+      "unit_ids": [
+        "unit-jon-008",
+        "unit-jon-018",
+        "unit-jon-019",
+        "unit-jon-023"
+      ],
+      "evidence_refs": [
+        "D1:24",
+        "D4:11",
+        "D4:13",
+        "D5:20"
+      ],
+      "confidence": "medium",
+      "inference_type": "fact"
+    }
+  ],
+  "working_context": [
+    {
+      "claim": "Encouragement from Gina matters to Jon and appears to help him stay positive during setbacks.",
+      "unit_ids": [
+        "unit-jon-014",
+        "unit-jon-016",
+        "unit-jon-024"
+      ],
+      "evidence_refs": [
+        "D3:13",
+        "D4:5",
+        "D5:22"
+      ],
+      "confidence": "medium",
+      "inference_type": "explicit_and_strong_inference"
+    },
+    {
+      "claim": "Jon tends to frame obstacles as difficult but manageable through continued effort.",
+      "unit_ids": [
+        "unit-jon-015",
+        "unit-jon-016",
+        "unit-jon-017"
+      ],
+      "evidence_refs": [
+        "D4:3",
+        "D4:5",
+        "D4:9"
+      ],
+      "confidence": "medium",
+      "inference_type": "explicit_and_strong_inference"
+    },
+    {
+      "claim": "Jon is supportive toward Gina's own store/business progress.",
+      "unit_ids": [
+        "unit-jon-010",
+        "unit-jon-024"
+      ],
+      "evidence_refs": [
+        "D2:2",
+        "D5:22"
+      ],
+      "confidence": "high",
+      "inference_type": "explicit"
+    }
+  ],
+  "archival_support": [
+    {
+      "claim": "Jon's dance crew previously won first place in a local competition, giving evidence of performance experience.",
+      "unit_ids": [
+        "unit-jon-005"
+      ],
+      "evidence_refs": [
+        "D1:16"
+      ],
+      "confidence": "high",
+      "inference_type": "fact"
+    },
+    {
+      "claim": "Jon's group prepared for and performed at a festival, later describing the performance as successful and motivating.",
+      "unit_ids": [
+        "unit-jon-008",
+        "unit-jon-009"
+      ],
+      "evidence_refs": [
+        "D1:24",
+        "D1:26"
+      ],
+      "confidence": "high",
+      "inference_type": "explicit"
+    }
+  ],
+  "uncertainty_and_questions": [
+    {
+      "question": "Has Jon already opened the studio, or is he still transitioning between searching, opening, and running it?",
+      "reason": "The sampled sessions contain both location-search language and later language about loving running his own studio.",
+      "related_units": [
+        "unit-jon-013",
+        "unit-jon-017",
+        "unit-jon-020"
+      ],
+      "recommended_handling": "Treat as evolving current state unless later evidence resolves the timeline."
+    },
+    {
+      "question": "Which dance events are the same event versus separate festival/show/competition references?",
+      "reason": "The pilot subset mentions a festival, an upcoming show, and a nearby competition; event identity may require more sessions or source QA alignment.",
+      "related_units": [
+        "unit-jon-008",
+        "unit-jon-009",
+        "unit-jon-018",
+        "unit-jon-019"
+      ],
+      "recommended_handling": "Keep event nodes separate candidates until graph assembly can merge with evidence."
+    }
+  ],
+  "input_unit_count": 24,
+  "corrections_applied": [
+    "unit-jon-010",
+    "unit-jon-011",
+    "unit-jon-012"
+  ]
+}

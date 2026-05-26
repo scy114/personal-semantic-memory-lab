@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "personal-semantic-memory-lab"
+version = "0.4.0"
+description = "Evidence-bound personal semantic memory and graph memory lab."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "Apache-2.0"}
+dependencies = [
+  "networkx>=3.0",
+  "numpy>=1.24",
+  "pandas>=2.0",
+  "python-dotenv>=1.0",
+  "PyYAML>=6.0",
+  "scikit-learn>=1.3",
+]
+
+[project.optional-dependencies]
+test = []
+nlp = [
+  "jieba",
+  "wordfreq",
+  "textstat",
+  "vaderSentiment",
+  "textblob",
+  "yake",
+  "empath",
+  "lexical-diversity",
+]
+embedding = [
+  "torch",
+  "transformers",
+]
+
+[tool.setuptools]
+packages = ["tools"]

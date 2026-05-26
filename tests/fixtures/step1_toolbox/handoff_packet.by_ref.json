@@ -1,0 +1,54 @@
+{
+  "schema_version": "step1.handoff_packet.v1",
+  "packet_id": "s1_to_s2_fixture_by_ref",
+  "packet_mode": "by_ref",
+  "query_or_task": {
+    "query_id": "q_fixture_jon_current_work",
+    "query_text": "What is Jon currently working on?"
+  },
+  "created_at": "2026-05-17T00:00:00+08:00",
+  "route": "mixed",
+  "retrieval_results": [
+    {
+      "result_id": "rr_fixture_001",
+      "use_policy": "assert",
+      "summary": "Raw evidence says Jon has been working on a grant proposal this week."
+    },
+    {
+      "result_id": "rr_fixture_mem_001",
+      "use_policy": "background_only",
+      "summary": "A Step 1 memory unit summarizes the same grant proposal evidence."
+    }
+  ],
+  "resolved_refs": [
+    {
+      "ref_id": "evidence:fixture:conv_001:turn_001",
+      "resolved": true
+    },
+    {
+      "ref_id": "memory:fixture:jon_current_work_001",
+      "resolved": true
+    }
+  ],
+  "support_checks": [
+    {
+      "check_id": "sc_fixture_direct_001",
+      "support_strength": "direct",
+      "use_policy": "assert"
+    }
+  ],
+  "grounding_reports": [
+    {
+      "grounding_id": "gr_fixture_001",
+      "overall_grounding": "grounded"
+    }
+  ],
+  "warnings": [],
+  "filters": {
+    "source_ids": ["source:fixture:conv_001"],
+    "item_layers": ["raw_evidence"],
+    "memory_statuses": ["accepted_for_experiment", "accepted_by_user"]
+  },
+  "cache_status": "not_used",
+  "known_failure_modes": []
+}

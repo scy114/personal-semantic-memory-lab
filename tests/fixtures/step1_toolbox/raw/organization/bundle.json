@@ -1,0 +1,15 @@
+{
+  "schema_version": "s0b.bundle.v0.1",
+  "bundle_id": "bundle:fixture:conv_001",
+  "workspace_id": "step1_toolbox_fixture",
+  "modeled_subject_id": "Jon",
+  "raw_root": "tests/fixtures/step1_toolbox/raw",
+  "source_count": 1,
+  "organization_degree": "high",
+  "processing_status": "ready_for_s1_intake",
+  "default_adapter_recommendation": "fixture_conversation_adapter",
+  "notes": [
+    "Synthetic high-organization fixture for S0B/S1 boundary tests.",
+    "The fixture is adapter-like input and must not define the universal S1 evidence model."
+  ]
+}

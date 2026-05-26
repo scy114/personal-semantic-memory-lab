@@ -1,0 +1,59 @@
+{
+  "schema_version": "step1.handoff_packet.v1",
+  "packet_id": "s1_to_s2_fixture_by_value",
+  "packet_mode": "by_value",
+  "query_or_task": {
+    "query_id": "q_fixture_jon_current_work",
+    "query_text": "What is Jon currently working on?"
+  },
+  "created_at": "2026-05-17T00:00:00+08:00",
+  "route": "mixed",
+  "retrieval_results": [
+    {
+      "result_id": "rr_fixture_001",
+      "use_policy": "assert",
+      "text": "Jon said he has been working on a grant proposal this week.",
+      "source_refs": ["source:fixture:conv_001"],
+      "evidence_refs": ["evidence:fixture:conv_001:turn_001"],
+      "warnings": []
+    },
+    {
+      "result_id": "rr_fixture_mem_001",
+      "use_policy": "background_only",
+      "text": "Jon is currently focused on a grant proposal.",
+      "source_refs": ["source:fixture:conv_001"],
+      "evidence_refs": ["evidence:fixture:conv_001:turn_001"],
+      "warnings": ["memory_unit_not_raw_evidence"]
+    }
+  ],
+  "resolved_refs": [
+    {
+      "ref_id": "evidence:fixture:conv_001:turn_001",
+      "resolved": true,
+      "text": "Jon said he has been working on a grant proposal this week."
+    }
+  ],
+  "support_checks": [
+    {
+      "check_id": "sc_fixture_direct_001",
+      "claim": "Jon is currently focused on a grant proposal.",
+      "support_strength": "direct",
+      "supporting_refs": ["evidence:fixture:conv_001:turn_001"],
+      "use_policy": "assert"
+    }
+  ],
+  "grounding_reports": [
+    {
+      "grounding_id": "gr_fixture_001",
+      "overall_grounding": "grounded"
+    }
+  ],
+  "warnings": ["by_value_debug_mode"],
+  "filters": {
+    "source_ids": ["source:fixture:conv_001"],
+    "item_layers": ["raw_evidence"],
+    "memory_statuses": ["accepted_for_experiment", "accepted_by_user"]
+  },
+  "cache_status": "not_used",
+  "known_failure_modes": []
+}

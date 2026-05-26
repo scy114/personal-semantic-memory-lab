@@ -1,0 +1,53 @@
+{
+  "schema_version": "graph_extraction_profile.v0.3",
+  "profile_id": "graph_relation_extraction.v0.3",
+  "target_task": "graph_relation_candidate",
+  "prompt_policies": {
+    "weak": {
+      "policy_id": "graph_relation_extraction_weak_prompt.v0.3",
+      "path": "configs/prompts/graph_relation_extraction_weak_prompt.v0.3.md"
+    },
+    "strong": {
+      "policy_id": "graph_relation_extraction_strong_prompt.v0.3",
+      "path": "configs/prompts/graph_relation_extraction_strong_prompt.v0.3.md"
+    }
+  },
+  "output_kinds": [
+    "graph_bundle_candidate",
+    "reject",
+    "model_uncertain",
+    "needs_human_review"
+  ],
+  "entity_types": [
+    "person",
+    "organization",
+    "place",
+    "project",
+    "tool",
+    "document",
+    "event",
+    "concept",
+    "preference",
+    "constraint",
+    "unknown"
+  ],
+  "directionality_statuses": [
+    "directed",
+    "bidirectional",
+    "undirected",
+    "ambiguous"
+  ],
+  "attribution_statuses": [
+    "source_text_only",
+    "speaker_perspective",
+    "context_supported",
+    "ambiguous",
+    "unknown"
+  ],
+  "confidence_hints": [
+    "high",
+    "medium",
+    "low",
+    "unknown"
+  ]
+}

@@ -1,0 +1,141 @@
+{
+  "calibration": {
+    "best_evaluation": {
+      "confusion": {
+        "nlp_openie_candidate->entity_candidate_only": 11,
+        "nlp_openie_candidate->skip_or_background_only": 14,
+        "nlp_openie_candidate->strong_llm_graph_extraction": 7,
+        "nlp_openie_candidate->weak_llm_graph_extraction": 48,
+        "strong_llm_graph_extraction->strong_llm_graph_extraction": 236,
+        "strong_llm_graph_extraction->weak_llm_graph_extraction": 6,
+        "weak_llm_graph_extraction->entity_candidate_only": 13,
+        "weak_llm_graph_extraction->strong_llm_graph_extraction": 1,
+        "weak_llm_graph_extraction->weak_llm_graph_extraction": 64
+      },
+      "exact_match": 0.75,
+      "mean_penalty": 0.7425,
+      "objective": 1.0875,
+      "predicted_counts": {
+        "entity_candidate_only": 24,
+        "skip_or_background_only": 14,
+        "strong_llm_graph_extraction": 244,
+        "weak_llm_graph_extraction": 118
+      },
+      "relation_route_recall": 0.905,
+      "target_counts": {
+        "nlp_openie_candidate": 80,
+        "strong_llm_graph_extraction": 242,
+        "weak_llm_graph_extraction": 78
+      }
+    },
+    "candidate_count": 25601,
+    "dataset_counts": {
+      "carb_openie": 80,
+      "dialogre_cn": 120,
+      "dialogre_en": 120,
+      "duie_chinese_spo": 80
+    },
+    "deep_learning_training_executed": false,
+    "method": "external_proxy_grid_search_non_dl",
+    "proxy_labels_are_not_truth": true,
+    "retacred_label_only_counts": {
+      "dev": {
+        "no_relation_count": 11246,
+        "positive_relation_count": 8338,
+        "row_count": 19584,
+        "source_hash": "5a733a3dec601e48d08dc2ac0c3d9c00c481ec1bdbd72aa1e9b3bcc81f8489e2",
+        "status": "label_only_no_text",
+        "top_labels": {
+          "no_relation": 11246,
+          "org:alternate_names": 440,
+          "org:country_of_branch": 338,
+          "org:top_members/employees": 462,
+          "per:age": 256,
+          "per:date_of_death": 234,
+          "per:employee_of": 576,
+          "per:identity": 2293,
+          "per:origin": 222,
+          "per:title": 998
+        }
+      },
+      "test": {
+        "no_relation_count": 7770,
+        "positive_relation_count": 5648,
+        "row_count": 13418,
+        "source_hash": "e4ca3b98be56d6485cdf0ddeceb4452c9a4697753f59054ea34dd356a2644a65",
+        "status": "label_only_no_text",
+        "top_labels": {
+          "no_relation": 7770,
+          "org:alternate_names": 337,
+          "org:city_of_branch": 129,
+          "org:country_of_branch": 166,
+          "org:top_members/employees": 295,
+          "per:age": 208,
+          "per:countries_of_residence": 148,
+          "per:employee_of": 332,
+          "per:identity": 2036,
+          "per:title": 523
+        }
+      },
+      "train": {
+        "no_relation_count": 38761,
+        "positive_relation_count": 19704,
+        "row_count": 58465,
+        "source_hash": "958d5643abccb70642c40d7b421d950a43ba6ed9cd7868944bcb3e3f1851e3cb",
+        "status": "label_only_no_text",
+        "top_labels": {
+          "no_relation": 38761,
+          "org:alternate_names": 1319,
+          "org:city_of_branch": 622,
+          "org:country_of_branch": 891,
+          "org:members": 560,
+          "org:top_members/employees": 1475,
+          "per:age": 421,
+          "per:employee_of": 2136,
+          "per:identity": 5320,
+          "per:title": 2626
+        }
+      }
+    },
+    "schema_version": "graph_v03.route_policy_calibration.v0.1",
+    "source_hashes": {
+      "CaRB/data/gold/dev.tsv": "2081484b4fd237728591227becf6357799fd1575366fa1eeb51590822fbce6fc",
+      "CaRB/data/gold/test.tsv": "5c74f7c51e147cc462ac7373d5293cb2b9df8455dcebd187fc6db6124bc5d4c2",
+      "DialogRE/data_v2/cn/data/train.json": "6da2a7da0575393bf34cce73f02cb8af5d7d44849eac1d031094ab56ffe303cd",
+      "DialogRE/data_v2/en/data/train.json": "eb295ecdbeaeeb688c5105636898a42493a86ed127c31ba75883b2f32d082b2c",
+      "DuIE-mirror-Bert-In-Relation-Extraction/duie_dev.json": "0dcfd378220107952e7f490e95f7f2f36d043507dc8304d362eb3041f9e2bace"
+    },
+    "target_counts": {
+      "nlp_openie_candidate": 80,
+      "strong_llm_graph_extraction": 242,
+      "weak_llm_graph_extraction": 78
+    }
+  },
+  "guardrails": {
+    "durable_writes_executed": false,
+    "graph_truth_written": false,
+    "llm_calls_executed": false,
+    "s3_written": false
+  },
+  "parameters": {
+    "entity_endpoint_floor": 3.0,
+    "entity_relation_ceiling": 2.0,
+    "evidence_min": 5.0,
+    "low_skip_floor": 7.0,
+    "low_skip_relation_ceiling": 3.0,
+    "nlp_attribution_ceiling": 4.0,
+    "nlp_context_ceiling": 4.0,
+    "nlp_direction_floor": 5.0,
+    "nlp_endpoint_floor": 4.0,
+    "nlp_surface_floor": 4.0,
+    "strong_attribution_floor": 5.0,
+    "strong_context_floor": 3.5,
+    "strong_merge_floor": 6.0,
+    "strong_utility_floor": 3.5,
+    "weak_relation_floor": 2.0,
+    "weak_utility_floor": 3.0
+  },
+  "policy_id": "graph-route-policy:v0.3:external-proxy-calibrated-candidate",
+  "schema_version": "graph_v03.route_policy.v0.3.candidate",
+  "target_task": "graph_relation_candidate"
+}

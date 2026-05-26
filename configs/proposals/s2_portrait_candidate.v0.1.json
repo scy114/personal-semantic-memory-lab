@@ -1,0 +1,87 @@
+{
+  "schema_version": "proposal_profile.v0.1",
+  "profile_id": "s2_portrait_candidate.v0.1",
+  "target_task": "s2_portrait_candidate",
+  "output_dir_name": "s2_portrait_candidate",
+  "proposal_schema_version": "s2.portrait_candidate_proposal.v0.1",
+  "run_schema_version": "s2.portrait_candidate_proposal_run.v0.1",
+  "human_review_queue_schema_version": "s2.portrait_human_review_queue.v0.1",
+  "proposal_id_prefix": "s2pc",
+  "proposal_input_id_prefix": "s2pi",
+  "output_files": {
+    "proposals": "portrait_candidate_proposals.ai.jsonl",
+    "manifest": "proposal_run_manifest.json",
+    "review_log": "proposal_review_log.jsonl",
+    "human_review_queue": "human_review_queue.jsonl",
+    "model_output_failures": "model_output_failures.jsonl",
+    "report": "proposal_run_report.md"
+  },
+  "prompt_policies": {
+    "weak": {
+      "policy_id": "s2_portrait_candidate_weak_prompt.v0.1",
+      "path": "configs/prompts/s2_portrait_candidate_weak_prompt.v0.1.md"
+    },
+    "strong": {
+      "policy_id": "s2_portrait_candidate_strong_prompt.v0.1",
+      "path": "configs/prompts/s2_portrait_candidate_strong_prompt.v0.1.md"
+    }
+  },
+  "max_quote_chars": 300,
+  "script_only_generates_candidates": false,
+  "script_only_may_upgrade_to_weak": false,
+  "human_review_calls_model_by_default": false,
+  "proposal_statuses": [
+    "candidate",
+    "reject",
+    "model_failure",
+    "skipped",
+    "human_review_required"
+  ],
+  "model_statuses": [
+    "candidate",
+    "reject",
+    "model_uncertain",
+    "needs_human_review"
+  ],
+  "candidate_types": [
+    "preference",
+    "goal",
+    "constraint",
+    "user_state",
+    "procedural",
+    "relationship_context",
+    "uncertainty",
+    "none"
+  ],
+  "inference_levels": [
+    "explicit",
+    "direct_inference",
+    "weak_inference",
+    "speculative"
+  ],
+  "claim_strengths": [
+    "direct",
+    "partial",
+    "weak",
+    "unknown"
+  ],
+  "proposal_confidences": [
+    "high",
+    "medium",
+    "low"
+  ],
+  "subject_contamination_risks": [
+    "low",
+    "medium",
+    "high",
+    "unknown"
+  ],
+  "privacy_classes": [
+    "public_dataset",
+    "personal_low",
+    "personal_sensitive",
+    "private_project",
+    "unpublished_research",
+    "unknown"
+  ]
+}

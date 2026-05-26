@@ -1,0 +1,8 @@
+{"query_id":"q01-current_state","question":"Jon 最近在忙什么？","expected_answer_type":"state","route":"hybrid","reason":"测试当前状态总结，需要结合近期活动、项目进展和证据引用。","needs_graph":true,"needs_temporal_filter":true}
+{"query_id":"q02-temporal_boundary","question":"Jon 现在还只是刚失业准备创业吗？","expected_answer_type":"state","route":"evidence_first","reason":"测试时间边界和状态演化，需要区分早期背景与后续推进。","needs_graph":true,"needs_temporal_filter":true}
+{"query_id":"q03-hallucination_guardrail","question":"Jon 最近是不是在准备金融行业面试？","expected_answer_type":"fact","route":"evidence_first","reason":"测试无证据/反幻觉问题，不能从 banker 背景推断金融面试。","needs_graph":true,"needs_temporal_filter":true}
+{"query_id":"q04-planning_constraint","question":"如果要给 Jon 建议，当前最应该考虑他的哪个目标或约束？","expected_answer_type":"planning","route":"hybrid","reason":"测试规划辅助，需要提取当前目标、约束和可用证据。","needs_graph":true,"needs_temporal_filter":true}
+{"query_id":"q05-graph_relationship","question":"Jon 的舞蹈工作室、排练、比赛之间有什么关系？","expected_answer_type":"relationship","route":"hybrid","reason":"测试图关系上下文，graph 只能作为关系背景，不能当证明。","needs_graph":true,"needs_temporal_filter":true}
+{"query_id":"q06-stable_preference","question":"Jon 对舞蹈有什么稳定偏好或长期兴趣？","expected_answer_type":"preference","route":"semantic","reason":"测试稳定偏好和长期兴趣类画像查询。","needs_graph":true,"needs_temporal_filter":true}
+{"query_id":"q07-evidence_for_studio","question":"哪些证据支持 Jon 正在推进 dance studio？","expected_answer_type":"fact","route":"evidence_first","reason":"测试证据型问题，需要直接列出 supporting evidence refs。","needs_graph":true,"needs_temporal_filter":true}
+{"query_id":"q08-insufficient_evidence","question":"Jon 最近有没有计划搬去纽约发展音乐事业？","expected_answer_type":"fact","route":"evidence_first","reason":"测试无证据问题，应明确 insufficient evidence，不能从舞蹈兴趣扩展到纽约音乐事业。","needs_graph":true,"needs_temporal_filter":true}

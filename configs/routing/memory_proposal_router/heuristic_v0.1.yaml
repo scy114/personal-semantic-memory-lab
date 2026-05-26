@@ -1,0 +1,147 @@
+schema_version: memory_proposal_router.policy.v0.1
+policy_id: memory-proposal-router-policy:v0.1:heuristic-config-driven
+policy_version: "0.1"
+router_backend: heuristic
+feature_extractor: regex_lexicon
+feature_extractor_version: memory_proposal_features.regex_lexicon.v0.1
+router_version: memory_proposal_router.heuristic_backend.v0.1
+matcher_version: regex_word_boundary_zh_phrase.v0.1
+route_confidence_type: heuristic_score_uncalibrated
+
+lexicon_path: configs/routing/lexicons/basic_zh_en_v0.1.yaml
+
+target_tasks:
+  - s1_memory_candidate
+  - s2_portrait_candidate
+  - graph_relation_candidate
+  - s0b_section_review
+  - support_check_candidate
+
+blocked_target_tasks:
+  - s3_hypothesis_candidate
+
+background_section_types:
+  - front_matter
+  - license
+  - copyright
+  - metadata
+  - footnote
+  - endnote
+  - editorial_note
+  - editorial_preface
+  - appendix
+  - bibliography
+  - person_list
+  - ocr_noise
+  - page_header_footer
+
+body_section_types:
+  - body
+  - quote
+
+excluded_retrieval_policies:
+  - excluded_from_default_retrieval
+  - explicit_query_only
+  - background_only
+
+blocked_s2_policies:
+  - blocked_from_portrait
+  - background_only
+
+punctuation_chars:
+  - ","
+  - ";"
+  - ":"
+  - "\uFF0C"
+  - "\uFF1B"
+  - "\uFF1A"
+
+weights:
+  # Proposal-unit length is a weak signal. Raw S0B/source span length is not
+  # a direct semantic complexity signal.
+  proposal_unit_char_count_gt: 1
+  proposal_unit_token_count_gt: 1
+  punctuation_per_two_max: 2
+  event_terms_max: 2
+  role_terms_present: 2
+  pronoun_terms_gte: 1
+  logical_markers_present: 1
+  importance_terms_present: 2
+  unknown_low_confidence: 1
+  mixed_detected: 1
+  graph_relation_candidate_base: 1
+  graph_relation_candidate_with_relation_signal: 2
+  s2_portrait_candidate_base: 1
+  support_check_candidate_base: 1
+  s0b_section_review_uncertain: 1
+  event_terms_density_high: 1
+  role_terms_density_high: 1
+  logical_markers_density_high: 1
+  importance_terms_density_high: 1
+
+thresholds:
+  source_span_char_count_coarse: 900
+  source_span_token_count_coarse: 180
+  proposal_unit_char_count_gt: 260
+  proposal_unit_token_count_gt: 65
+  pronoun_terms_gte: 2
+  event_terms_per_100_tokens_high: 2.0
+  role_terms_per_100_tokens_high: 1.0
+  logical_markers_per_100_tokens_high: 1.0
+  importance_terms_per_100_tokens_high: 1.0
+  script_only_max_score: 1
+  weak_llm_max_score: 4
+  strong_llm_max_score: 7
+  route_score_max: 12
+
+routes:
+  background:
+    recommended_route: skip_or_background_only
+    fallback_route: weak_llm_proposal
+    cost_class: none
+  preprocessing_required:
+    recommended_route: split_or_segment_first
+    fallback_route: weak_llm_proposal
+    cost_class: low
+  script:
+    recommended_route: script_only
+    fallback_route: weak_llm_proposal
+    cost_class: low
+  weak:
+    recommended_route: weak_llm_proposal
+    fallback_route: strong_llm_proposal
+    cost_class: medium
+  strong:
+    recommended_route: strong_llm_proposal
+    fallback_route: human_review
+    cost_class: high
+  human:
+    recommended_route: human_review
+    fallback_route: human_review
+    cost_class: high
+
+warnings:
+  support_check_candidate: support_check_candidate_does_not_set_support_status
+  s0b_section_review: s0b_section_review_owned_by_s0b_section_policy
+  background_logged: background_or_excluded_span_logged
+  high_complexity: high_complexity_or_high_impact
+  needs_proposal_unit_segmentation: needs_proposal_unit_segmentation
+  raw_span_too_coarse: raw_span_too_coarse
+  length_feature_may_reflect_segmentation: length_feature_may_reflect_segmentation
+
+unknown_metadata_policy:
+  missing_metadata_reason: unknown_missing_metadata
+  low_confidence_reason: unknown_classifier_low_confidence
+  mixed_reason: mixed_detected
+  missing_metadata_adds_score: false
+  low_confidence_adds_score: true
+  mixed_adds_score: true
+
+guardrails:
+  write_permission: false
+  llm_calls_executed: false
+  proposal_generation_executed: false
+  durable_writes_executed: false
+  automatic_cascade_executed: false
+  support_check_candidate_sets_support_status: false
+  s3_hypothesis_candidate_emitted: false

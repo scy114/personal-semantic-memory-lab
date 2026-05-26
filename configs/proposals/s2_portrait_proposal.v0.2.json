@@ -1,0 +1,145 @@
+{
+  "schema_version": "proposal_profile.v0.2",
+  "profile_id": "s2_portrait_proposal.v0.2",
+  "target_task": "s2_portrait_candidate",
+  "output_dir_name": "s2_portrait_proposal_v0.2",
+  "proposal_schema_version": "s2.portrait_proposal.v0.2",
+  "run_schema_version": "s2.portrait_proposal_run.v0.2",
+  "human_review_queue_schema_version": "s2.portrait_human_review_queue.v0.2",
+  "proposal_id_prefix": "s2p",
+  "proposal_input_id_prefix": "s2pi",
+  "output_files": {
+    "proposals": "proposal_outcomes.ai.jsonl",
+    "manifest": "proposal_run_manifest.json",
+    "review_log": "proposal_review_log.jsonl",
+    "human_review_queue": "human_review_queue.jsonl",
+    "model_output_failures": "model_output_failures.jsonl",
+    "report": "proposal_run_report.md"
+  },
+  "prompt_policies": {
+    "weak": {
+      "policy_id": "s2_portrait_proposal_weak_prompt.v0.2",
+      "path": "configs/prompts/s2_portrait_proposal_weak_prompt.v0.2.md"
+    },
+    "strong": {
+      "policy_id": "s2_portrait_proposal_strong_prompt.v0.2",
+      "path": "configs/prompts/s2_portrait_proposal_strong_prompt.v0.2.md"
+    }
+  },
+  "max_quote_chars": 300,
+  "script_only_generates_candidates": false,
+  "script_only_may_upgrade_to_weak": true,
+  "human_review_calls_model_by_default": false,
+  "proposal_statuses": [
+    "portrait_fact_candidate",
+    "portrait_hypothesis_candidate",
+    "reject",
+    "model_uncertain",
+    "needs_human_review",
+    "model_failure",
+    "skipped"
+  ],
+  "model_statuses": [
+    "portrait_fact_candidate",
+    "portrait_hypothesis_candidate",
+    "reject",
+    "model_uncertain",
+    "needs_human_review"
+  ],
+  "output_kinds": [
+    "portrait_fact_candidate",
+    "portrait_hypothesis_candidate",
+    "reject",
+    "model_uncertain",
+    "needs_human_review",
+    "model_failure",
+    "skipped"
+  ],
+  "epistemic_statuses": [
+    "fact_candidate",
+    "hypothesis",
+    "reject",
+    "uncertain",
+    "human_review_required",
+    "failure",
+    "skipped"
+  ],
+  "candidate_types": [
+    "preference",
+    "goal",
+    "constraint",
+    "user_state",
+    "procedural",
+    "relationship_context",
+    "project_context",
+    "uncertainty",
+    "none",
+    "unknown"
+  ],
+  "inference_levels": [
+    "explicit",
+    "direct_inference",
+    "weak_inference",
+    "speculative",
+    "unknown"
+  ],
+  "claim_strengths": [
+    "direct",
+    "partial",
+    "weak",
+    "unknown"
+  ],
+  "proposal_confidences": [
+    "high",
+    "medium",
+    "low",
+    "unknown"
+  ],
+  "hypothesis_statuses": [
+    "active",
+    "unknown"
+  ],
+  "hypothesis_confidences": [
+    "high",
+    "medium",
+    "low",
+    "unknown"
+  ],
+  "hypothesis_scopes": [
+    "event",
+    "session",
+    "relationship",
+    "project",
+    "topic",
+    "cross_topic",
+    "global",
+    "unknown"
+  ],
+  "commitment_levels": [
+    "low",
+    "medium",
+    "high",
+    "unknown"
+  ],
+  "promotion_readinesses": [
+    "not_ready",
+    "needs_more_evidence",
+    "review_candidate",
+    "ready_for_claim_packet",
+    "unknown"
+  ],
+  "subject_contamination_risks": [
+    "low",
+    "medium",
+    "high",
+    "unknown"
+  ],
+  "privacy_classes": [
+    "public_dataset",
+    "personal_low",
+    "personal_sensitive",
+    "private_project",
+    "unpublished_research",
+    "unknown"
+  ]
+}

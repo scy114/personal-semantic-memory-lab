@@ -1,0 +1,17 @@
+{
+  "schema_version": "s0b.bundle.v0.1",
+  "bundle_id": "bundle:locomo:conv-30:jon",
+  "workspace_id": "public_locomo_conv_30_jon",
+  "modeled_subject_id": "Jon",
+  "raw_root": "users/public_locomo_conv_30_jon/raw",
+  "source_count": 2,
+  "organization_degree": "high",
+  "processing_status": "ready_for_s1_intake",
+  "default_adapter_recommendation": "locomo_conversation_adapter",
+  "notes": [
+    "LoCoMo/Jon is a high-organization public fixture.",
+    "It is adapter-like dataset output, not the universal S1 evidence model.",
+    "D<day>:<turn> refs are source_specific_ref/display_ref and must not define core S1 evidence semantics.",
+    "Jon S1 evidence was rebuilt with full raw record coverage on 2026-05-18."
+  ]
+}

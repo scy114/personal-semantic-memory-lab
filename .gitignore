@@ -1,0 +1,32 @@
+# Local secrets.
+.env
+.env.*
+!.env.example
+
+# Python runtime artifacts.
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Generated/local outputs.
+users/
+data/
+reports/
+experiments/
+review_artifacts/
+external_references/
+
+# Model/vector/database caches.
+*.npy
+*.npz
+*.parquet
+*.sqlite
+*.sqlite3
+
+# OS/editor noise.
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

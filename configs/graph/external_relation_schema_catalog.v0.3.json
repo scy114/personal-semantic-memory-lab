@@ -1,0 +1,179 @@
+{
+  "schema_version": "external_relation_schema_catalog.v0.3",
+  "catalog_id": "graph_v03_external_relation_schema_catalog",
+  "purpose": "External relation schema sources used to normalize graph relation candidates. This catalog is a schema reference, not graph truth.",
+  "graph_is_not_proof": true,
+  "sources": [
+    {
+      "source_id": "arf_fiction_relation_ontology",
+      "name": "ARF / Artificial Relationships in Fiction",
+      "url": "https://aclanthology.org/anthology-files/pdf/latechclfl/2025.latechclfl-1.13.pdf",
+      "local_artifacts": [
+        "external_references/graph_relation_schemas/arf/README.md",
+        "external_references/graph_relation_schemas/arf/hf_dataset_api_Despina_project_gutenberg.json",
+        "external_references/graph_relation_schemas/arf/synthetic_relations_in_fiction_books_train.parquet",
+        "external_references/graph_relation_schemas/arf/arf_relation_schema_summary.json",
+        "external_references/graph_relation_schemas/arf/arf_relation_types.txt"
+      ],
+      "role": "Primary narrative/literary relation schema reference.",
+      "used_for": [
+        "family relations",
+        "social relations",
+        "location/presence relations",
+        "event participation relations",
+        "artifact/content relations"
+      ]
+    },
+    {
+      "source_id": "dialogre_relation_schema",
+      "name": "DialogRE",
+      "url": "https://dataset.org/dialogre/",
+      "local_artifacts": [
+        "external_references/graph_relation_schemas/dialogre/dialogre",
+        "external_references/graph_relation_schemas/dialogre/dialogre_relation_schema_summary.json",
+        "external_references/graph_relation_schemas/dialogre/dialogre_relation_types.txt"
+      ],
+      "role": "Dialogue/social relation schema reference.",
+      "used_for": [
+        "speaker social relations",
+        "family relations in dialogue",
+        "visited/place/residence relations",
+        "employment/member relations"
+      ]
+    },
+    {
+      "source_id": "conceptnet_relations",
+      "name": "ConceptNet relations",
+      "url": "https://github.com/commonsense/conceptnet5/wiki/relations",
+      "local_artifacts": [
+        "external_references/graph_relation_schemas/conceptnet/conceptnet5.wiki",
+        "external_references/graph_relation_schemas/conceptnet/conceptnet5.wiki/Relations.md"
+      ],
+      "role": "Commonsense fallback family reference.",
+      "used_for": [
+        "part_of",
+        "located_at",
+        "causes",
+        "uses",
+        "motivates",
+        "has_attribute",
+        "related_to_generic fallback"
+      ]
+    },
+    {
+      "source_id": "dbpedia_wikidata_property_reference",
+      "name": "DBpedia Ontology / Wikidata properties",
+      "url": "https://www.dbpedia.org/resources/ontology/",
+      "local_artifacts": [
+        "external_references/graph_relation_schemas/dbpedia/dbpedia_ontology_page.html",
+        "external_references/graph_relation_schemas/dbpedia/dbpedia_ontology_tbox.owl",
+        "external_references/graph_relation_schemas/wikidata/selected_property_manifest.json",
+        "external_references/graph_relation_schemas/wikidata/P26.json",
+        "external_references/graph_relation_schemas/wikidata/P22.json",
+        "external_references/graph_relation_schemas/wikidata/P25.json",
+        "external_references/graph_relation_schemas/wikidata/P40.json",
+        "external_references/graph_relation_schemas/wikidata/P551.json",
+        "external_references/graph_relation_schemas/wikidata/P463.json",
+        "external_references/graph_relation_schemas/wikidata/P527.json",
+        "external_references/graph_relation_schemas/wikidata/P361.json",
+        "external_references/graph_relation_schemas/wikidata/P276.json"
+      ],
+      "role": "Encyclopedic alias reference for common person/place/property edges.",
+      "used_for": [
+        "spouse",
+        "child",
+        "parent",
+        "birth/place/residence",
+        "member_of",
+        "part_of"
+      ]
+    }
+  ],
+  "canonical_relation_families": {
+    "family": [
+      "child_of",
+      "parent_of",
+      "spouse_of",
+      "sibling_of",
+      "relative_of"
+    ],
+    "social": [
+      "friend_of",
+      "lover_of",
+      "rival_of",
+      "enemy_of",
+      "mentor_of",
+      "protector_of",
+      "employer_of",
+      "leader_of",
+      "member_of",
+      "talks_to",
+      "socializes_with"
+    ],
+    "location_presence": [
+      "located_at",
+      "located_in",
+      "lives_in",
+      "visits",
+      "travels_to",
+      "frequents",
+      "occurs_in",
+      "attended_by",
+      "occupies"
+    ],
+    "emotion_attention": [
+      "admires",
+      "cares_for",
+      "comforts",
+      "grieves_for",
+      "resents",
+      "prefers",
+      "preoccupied_with",
+      "perceives_as",
+      "expects_response_from"
+    ],
+    "agency_action": [
+      "plans",
+      "intends",
+      "orders",
+      "arranges",
+      "serves",
+      "works_in",
+      "writes_for",
+      "uses",
+      "owns",
+      "creates",
+      "opens",
+      "replaces",
+      "prepares_for",
+      "participates_in"
+    ],
+    "causal_update": [
+      "causes",
+      "affects",
+      "influences",
+      "predicts",
+      "updates",
+      "contradicts"
+    ],
+    "composition_attribute": [
+      "part_of",
+      "includes",
+      "has_attribute",
+      "describes",
+      "compares_with",
+      "associated_with"
+    ],
+    "identity_uncertainty": [
+      "possible_same_as"
+    ],
+    "generic": [
+      "related_to_generic"
+    ]
+  },
+  "boundary": {
+    "external_schema_is_not_extraction_authority": true,
+    "normalization_is_not_support_proof": true,
+    "unmapped_relations_remain_generic_with_raw_type_preserved": true
+  }
+}

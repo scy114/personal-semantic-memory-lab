@@ -1,0 +1,725 @@
+{
+  "packet_id": "base-assistance-public_locomo_conv_30_jon-v1",
+  "user_id": "public_locomo_conv_30_jon",
+  "task_id": "base",
+  "task_type": "general_personal_assistance",
+  "dataset_scope": "public LoCoMO conv-30 sessions 1-5",
+  "approval_policy": "public dataset accepted_for_experiment only; no real user approval implied",
+  "relevant_portrait_units": [
+    {
+      "unit_id": "unit-jon-003",
+      "content": "Jon has been into dancing since childhood and treats dance as both a passion and an escape.",
+      "confidence": "high",
+      "inference_level": "explicit",
+      "evidence_refs": [
+        "D1:6"
+      ]
+    },
+    {
+      "unit_id": "unit-jon-004",
+      "content": "Jon loves many dance styles, with contemporary dance as his top preference.",
+      "confidence": "high",
+      "inference_level": "explicit",
+      "evidence_refs": [
+        "D1:8"
+      ]
+    },
+    {
+      "unit_id": "unit-jon-021",
+      "content": "Jon sees taking risks as important for success and growth, linking it to leaving a secure banker job for a dance business.",
+      "confidence": "high",
+      "inference_level": "explicit",
+      "evidence_refs": [
+        "D5:10"
+      ]
+    },
+    {
+      "unit_id": "unit-jon-022",
+      "content": "Jon values freedom and self-expression, and sees dance as an escape to be himself.",
+      "confidence": "high",
+      "inference_level": "explicit",
+      "evidence_refs": [
+        "D5:16"
+      ]
+    },
+    {
+      "unit_id": "unit-jon-006",
+      "content": "Jon imagines an ideal dance studio by the water with an inspiring view.",
+      "confidence": "medium",
+      "inference_level": "explicit",
+      "evidence_refs": [
+        "D1:20"
+      ]
+    },
+    {
+      "unit_id": "unit-jon-007",
+      "content": "Jon hopes to find an inspiring place for the dance studio.",
+      "confidence": "medium",
+      "inference_level": "explicit",
+      "evidence_refs": [
+        "D1:22"
+      ]
+    },
+    {
+      "unit_id": "unit-jon-013",
+      "content": "Jon remains determined to make the dance studio work despite a bumpy process and is still searching for a location.",
+      "confidence": "high",
+      "inference_level": "explicit",
+      "evidence_refs": [
+        "D3:1"
+      ]
+    },
+    {
+      "unit_id": "unit-jon-017",
+      "content": "Jon is determined to find the right dance studio location and believes the rest will follow after that.",
+      "confidence": "high",
+      "inference_level": "explicit",
+      "evidence_refs": [
+        "D4:9"
+      ]
+    },
+    {
+      "unit_id": "unit-jon-020",
+      "content": "Jon enjoys running his own studio because it lets him create a space where dancers of all ages and levels can express themselves.",
+      "confidence": "high",
+      "inference_level": "explicit",
+      "evidence_refs": [
+        "D5:4"
+      ]
+    },
+    {
+      "unit_id": "unit-jon-002",
+      "content": "Jon is starting a dance studio because he is passionate about dancing and wants to share it with others.",
+      "confidence": "high",
+      "inference_level": "explicit",
+      "evidence_refs": [
+        "D1:4"
+      ]
+    },
+    {
+      "unit_id": "unit-jon-009",
+      "content": "Jon's group is preparing to perform at a festival.",
+      "confidence": "high",
+      "inference_level": "explicit",
+      "evidence_refs": [
+        "D1:26"
+      ]
+    },
+    {
+      "unit_id": "unit-jon-011",
+      "content": "Jon is actively scouting locations for his dance studio and has found a possible place with great natural light.",
+      "confidence": "high",
+      "inference_level": "explicit",
+      "evidence_refs": [
+        "D2:4"
+      ]
+    },
+    {
+      "unit_id": "unit-jon-012",
+      "content": "Jon wants the dance studio location to be accessible downtown, have natural light, enough size, and a safe dance floor with bounce.",
+      "confidence": "high",
+      "inference_level": "explicit",
+      "evidence_refs": [
+        "D2:6"
+      ]
+    },
+    {
+      "unit_id": "unit-jon-016",
+      "content": "Jon finds setbacks hard when things do not go his way, but believes persistence can help him reach his dreams.",
+      "confidence": "medium",
+      "inference_level": "explicit",
+      "evidence_refs": [
+        "D4:5"
+      ]
+    },
+    {
+      "unit_id": "unit-jon-023",
+      "content": "Jon finds juggling dancing and running his business tricky but rewarding, with each passion energizing the other.",
+      "confidence": "medium",
+      "inference_level": "explicit",
+      "evidence_refs": [
+        "D5:20"
+      ]
+    },
+    {
+      "unit_id": "unit-jon-008",
+      "content": "Jon rehearses with a small group of dancers after work and works on projects including choreography for a nearby festival.",
+      "confidence": "high",
+      "inference_level": "explicit",
+      "evidence_refs": [
+        "D1:24"
+      ]
+    },
+    {
+      "unit_id": "unit-jon-018",
+      "content": "Jon works on his business, rehearses new dance routines, and prepares for an upcoming show.",
+      "confidence": "high",
+      "inference_level": "explicit",
+      "evidence_refs": [
+        "D4:11"
+      ]
+    },
+    {
+      "unit_id": "unit-jon-014",
+      "content": "Jon responds to encouragement by staying positive and pushing forward on his dreams.",
+      "confidence": "medium",
+      "inference_level": "strong_inference",
+      "evidence_refs": [
+        "D3:13"
+      ]
+    },
+    {
+      "unit_id": "unit-jon-015",
+      "content": "Jon is willing to keep working on his business despite obstacles.",
+      "confidence": "high",
+      "inference_level": "explicit",
+      "evidence_refs": [
+        "D4:3"
+      ]
+    },
+    {
+      "unit_id": "unit-jon-010",
+      "content": "Jon notices and congratulates Gina's store progress, recognizing her hard work.",
+      "confidence": "high",
+      "inference_level": "explicit",
+      "evidence_refs": [
+        "D2:2"
+      ]
+    },
+    {
+      "unit_id": "unit-jon-024",
+      "content": "Jon values Gina's encouragement and sees her as being in his corner while he pursues his dance studio and business dreams.",
+      "confidence": "high",
+      "inference_level": "explicit",
+      "evidence_refs": [
+        "D5:22"
+      ]
+    }
+  ],
+  "relevant_constraints": [
+    {
+      "unit_id": "unit-jon-012",
+      "content": "Jon wants the dance studio location to be accessible downtown, have natural light, enough size, and a safe dance floor with bounce.",
+      "confidence": "high",
+      "inference_level": "explicit",
+      "evidence_refs": [
+        "D2:6"
+      ]
+    },
+    {
+      "unit_id": "unit-jon-016",
+      "content": "Jon finds setbacks hard when things do not go his way, but believes persistence can help him reach his dreams.",
+      "confidence": "medium",
+      "inference_level": "explicit",
+      "evidence_refs": [
+        "D4:5"
+      ]
+    },
+    {
+      "unit_id": "unit-jon-023",
+      "content": "Jon finds juggling dancing and running his business tricky but rewarding, with each passion energizing the other.",
+      "confidence": "medium",
+      "inference_level": "explicit",
+      "evidence_refs": [
+        "D5:20"
+      ]
+    }
+  ],
+  "relevant_goals": [
+    {
+      "unit_id": "unit-jon-006",
+      "content": "Jon imagines an ideal dance studio by the water with an inspiring view.",
+      "confidence": "medium",
+      "inference_level": "explicit",
+      "evidence_refs": [
+        "D1:20"
+      ]
+    },
+    {
+      "unit_id": "unit-jon-007",
+      "content": "Jon hopes to find an inspiring place for the dance studio.",
+      "confidence": "medium",
+      "inference_level": "explicit",
+      "evidence_refs": [
+        "D1:22"
+      ]
+    },
+    {
+      "unit_id": "unit-jon-013",
+      "content": "Jon remains determined to make the dance studio work despite a bumpy process and is still searching for a location.",
+      "confidence": "high",
+      "inference_level": "explicit",
+      "evidence_refs": [
+        "D3:1"
+      ]
+    },
+    {
+      "unit_id": "unit-jon-017",
+      "content": "Jon is determined to find the right dance studio location and believes the rest will follow after that.",
+      "confidence": "high",
+      "inference_level": "explicit",
+      "evidence_refs": [
+        "D4:9"
+      ]
+    },
+    {
+      "unit_id": "unit-jon-020",
+      "content": "Jon enjoys running his own studio because it lets him create a space where dancers of all ages and levels can express themselves.",
+      "confidence": "high",
+      "inference_level": "explicit",
+      "evidence_refs": [
+        "D5:4"
+      ]
+    },
+    {
+      "unit_id": "unit-jon-002",
+      "content": "Jon is starting a dance studio because he is passionate about dancing and wants to share it with others.",
+      "confidence": "high",
+      "inference_level": "explicit",
+      "evidence_refs": [
+        "D1:4"
+      ]
+    },
+    {
+      "unit_id": "unit-jon-009",
+      "content": "Jon's group is preparing to perform at a festival.",
+      "confidence": "high",
+      "inference_level": "explicit",
+      "evidence_refs": [
+        "D1:26"
+      ]
+    },
+    {
+      "unit_id": "unit-jon-011",
+      "content": "Jon is actively scouting locations for his dance studio and has found a possible place with great natural light.",
+      "confidence": "high",
+      "inference_level": "explicit",
+      "evidence_refs": [
+        "D2:4"
+      ]
+    }
+  ],
+  "procedural_preferences": [
+    {
+      "unit_id": "unit-jon-014",
+      "content": "Jon responds to encouragement by staying positive and pushing forward on his dreams.",
+      "confidence": "medium",
+      "inference_level": "strong_inference",
+      "evidence_refs": [
+        "D3:13"
+      ]
+    },
+    {
+      "unit_id": "unit-jon-015",
+      "content": "Jon is willing to keep working on his business despite obstacles.",
+      "confidence": "high",
+      "inference_level": "explicit",
+      "evidence_refs": [
+        "D4:3"
+      ]
+    }
+  ],
+  "temporal_state": {
+    "latest_observed_at": "9:32 am on 8 February, 2023",
+    "current_state_summary": "Jon is pursuing a dance-studio business, balancing dance rehearsals/events with business work, and still has unresolved timeline ambiguity around studio location versus running the studio.",
+    "historical_notes": [
+      "Jon previously worked as a banker and lost that job shortly before the first sampled session.",
+      "Jon's dance crew won first place in a local competition before the sampled conversation."
+    ],
+    "uncertainties": [
+      {
+        "question": "Has Jon already opened the studio, or is he still transitioning between searching, opening, and running it?",
+        "reason": "The sampled sessions contain both location-search language and later language about loving running his own studio.",
+        "related_units": [
+          "unit-jon-013",
+          "unit-jon-017",
+          "unit-jon-020"
+        ],
+        "recommended_handling": "Treat as evolving current state unless later evidence resolves the timeline."
+      },
+      {
+        "question": "Which dance events are the same event versus separate festival/show/competition references?",
+        "reason": "The pilot subset mentions a festival, an upcoming show, and a nearby competition; event identity may require more sessions or source QA alignment.",
+        "related_units": [
+          "unit-jon-008",
+          "unit-jon-009",
+          "unit-jon-018",
+          "unit-jon-019"
+        ],
+        "recommended_handling": "Keep event nodes separate candidates until graph assembly can merge with evidence."
+      }
+    ]
+  },
+  "graph_context": {
+    "node_count": 24,
+    "edge_count": 22,
+    "core_nodes": [
+      "public_locomo_conv_30_jon",
+      "dance_studio_project",
+      "dance_interest",
+      "contemporary_dance_preference",
+      "studio_location_search",
+      "studio_site_requirements",
+      "gina_support_relationship",
+      "risk_taking_value",
+      "freedom_self_expression_value"
+    ],
+    "project_edges": [
+      {
+        "edge_id": "edge-jon-001",
+        "source_node": "public_locomo_conv_30_jon",
+        "relation_type": "works_on",
+        "target_node": "dance_studio_project",
+        "status": "active",
+        "confidence": "high",
+        "inference_level": "explicit",
+        "evidence_refs": [
+          "D1:4"
+        ],
+        "supporting_units": [
+          "unit-jon-002"
+        ]
+      },
+      {
+        "edge_id": "edge-jon-008",
+        "source_node": "public_locomo_conv_30_jon",
+        "relation_type": "works_on",
+        "target_node": "festival_performance_project",
+        "status": "active",
+        "confidence": "high",
+        "inference_level": "explicit",
+        "evidence_refs": [
+          "D1:24",
+          "D1:26"
+        ],
+        "supporting_units": [
+          "unit-jon-008",
+          "unit-jon-009"
+        ]
+      },
+      {
+        "edge_id": "edge-jon-018",
+        "source_node": "public_locomo_conv_30_jon",
+        "relation_type": "works_on",
+        "target_node": "upcoming_dance_competition",
+        "status": "active",
+        "confidence": "high",
+        "inference_level": "explicit",
+        "evidence_refs": [
+          "D4:13"
+        ],
+        "supporting_units": [
+          "unit-jon-019"
+        ]
+      },
+      {
+        "edge_id": "edge-jon-005",
+        "source_node": "dance_studio_project",
+        "relation_type": "has_goal",
+        "target_node": "ideal_studio_location",
+        "status": "candidate",
+        "confidence": "medium",
+        "inference_level": "explicit",
+        "evidence_refs": [
+          "D1:20"
+        ],
+        "supporting_units": [
+          "unit-jon-006"
+        ]
+      },
+      {
+        "edge_id": "edge-jon-006",
+        "source_node": "dance_studio_project",
+        "relation_type": "has_goal",
+        "target_node": "inspiring_studio_space_goal",
+        "status": "candidate",
+        "confidence": "medium",
+        "inference_level": "explicit",
+        "evidence_refs": [
+          "D1:22"
+        ],
+        "supporting_units": [
+          "unit-jon-007"
+        ]
+      },
+      {
+        "edge_id": "edge-jon-012",
+        "source_node": "dance_studio_project",
+        "relation_type": "has_goal",
+        "target_node": "studio_location_search",
+        "status": "active",
+        "confidence": "high",
+        "inference_level": "explicit",
+        "evidence_refs": [
+          "D3:1"
+        ],
+        "supporting_units": [
+          "unit-jon-013"
+        ]
+      },
+      {
+        "edge_id": "edge-jon-016",
+        "source_node": "dance_studio_project",
+        "relation_type": "has_goal",
+        "target_node": "right_studio_location_goal",
+        "status": "active",
+        "confidence": "high",
+        "inference_level": "explicit",
+        "evidence_refs": [
+          "D4:9"
+        ],
+        "supporting_units": [
+          "unit-jon-017"
+        ]
+      },
+      {
+        "edge_id": "edge-jon-019",
+        "source_node": "dance_studio_project",
+        "relation_type": "has_goal",
+        "target_node": "inclusive_expression_studio_goal",
+        "status": "active",
+        "confidence": "high",
+        "inference_level": "explicit",
+        "evidence_refs": [
+          "D5:4"
+        ],
+        "supporting_units": [
+          "unit-jon-020"
+        ]
+      },
+      {
+        "edge_id": "edge-jon-011",
+        "source_node": "dance_studio_project",
+        "relation_type": "has_constraint",
+        "target_node": "studio_site_requirements",
+        "status": "active",
+        "confidence": "high",
+        "inference_level": "explicit",
+        "evidence_refs": [
+          "D2:6"
+        ],
+        "supporting_units": [
+          "unit-jon-012"
+        ]
+      },
+      {
+        "edge_id": "edge-jon-022",
+        "source_node": "dance_studio_project",
+        "relation_type": "has_constraint",
+        "target_node": "juggling_dance_and_business",
+        "status": "candidate",
+        "confidence": "medium",
+        "inference_level": "explicit",
+        "evidence_refs": [
+          "D5:20"
+        ],
+        "supporting_units": [
+          "unit-jon-023"
+        ]
+      },
+      {
+        "edge_id": "edge-jon-010",
+        "source_node": "dance_studio_project",
+        "relation_type": "updates",
+        "target_node": "studio_location_search",
+        "status": "active",
+        "confidence": "high",
+        "inference_level": "explicit",
+        "evidence_refs": [
+          "D2:4"
+        ],
+        "supporting_units": [
+          "unit-jon-011"
+        ]
+      }
+    ],
+    "personalization_edges": [
+      {
+        "edge_id": "edge-jon-002",
+        "source_node": "public_locomo_conv_30_jon",
+        "relation_type": "has_interest",
+        "target_node": "dance_interest",
+        "status": "active",
+        "confidence": "high",
+        "inference_level": "explicit",
+        "evidence_refs": [
+          "D1:6"
+        ],
+        "supporting_units": [
+          "unit-jon-003"
+        ]
+      },
+      {
+        "edge_id": "edge-jon-003",
+        "source_node": "public_locomo_conv_30_jon",
+        "relation_type": "has_preference",
+        "target_node": "contemporary_dance_preference",
+        "status": "active",
+        "confidence": "high",
+        "inference_level": "explicit",
+        "evidence_refs": [
+          "D1:8"
+        ],
+        "supporting_units": [
+          "unit-jon-004"
+        ]
+      },
+      {
+        "edge_id": "edge-jon-020",
+        "source_node": "public_locomo_conv_30_jon",
+        "relation_type": "has_value",
+        "target_node": "risk_taking_value",
+        "status": "active",
+        "confidence": "high",
+        "inference_level": "explicit",
+        "evidence_refs": [
+          "D5:10"
+        ],
+        "supporting_units": [
+          "unit-jon-021"
+        ]
+      },
+      {
+        "edge_id": "edge-jon-021",
+        "source_node": "public_locomo_conv_30_jon",
+        "relation_type": "has_value",
+        "target_node": "freedom_self_expression_value",
+        "status": "active",
+        "confidence": "high",
+        "inference_level": "explicit",
+        "evidence_refs": [
+          "D5:16"
+        ],
+        "supporting_units": [
+          "unit-jon-022"
+        ]
+      },
+      {
+        "edge_id": "edge-jon-013",
+        "source_node": "public_locomo_conv_30_jon",
+        "relation_type": "has_procedure",
+        "target_node": "positive_persistence_style",
+        "status": "candidate",
+        "confidence": "medium",
+        "inference_level": "strong_inference",
+        "evidence_refs": [
+          "D3:13"
+        ],
+        "supporting_units": [
+          "unit-jon-014"
+        ]
+      },
+      {
+        "edge_id": "edge-jon-014",
+        "source_node": "public_locomo_conv_30_jon",
+        "relation_type": "has_procedure",
+        "target_node": "obstacle_persistence",
+        "status": "active",
+        "confidence": "high",
+        "inference_level": "explicit",
+        "evidence_refs": [
+          "D4:3"
+        ],
+        "supporting_units": [
+          "unit-jon-015"
+        ]
+      },
+      {
+        "edge_id": "edge-jon-009",
+        "source_node": "public_locomo_conv_30_jon",
+        "relation_type": "has_relationship",
+        "target_node": "gina_support_relationship",
+        "status": "active",
+        "confidence": "high",
+        "inference_level": "explicit",
+        "evidence_refs": [
+          "D2:2",
+          "D5:22"
+        ],
+        "supporting_units": [
+          "unit-jon-010",
+          "unit-jon-024"
+        ]
+      }
+    ],
+    "candidate_edges_to_treat_carefully": [
+      {
+        "edge_id": "edge-jon-015",
+        "source_node": "setback_difficulty",
+        "relation_type": "indicates",
+        "target_node": "need_encouragement",
+        "status": "candidate",
+        "confidence": "medium",
+        "inference_level": "explicit",
+        "evidence_refs": [
+          "D4:5"
+        ],
+        "supporting_units": [
+          "unit-jon-016"
+        ]
+      },
+      {
+        "edge_id": "edge-jon-004",
+        "source_node": "dance_competition_win",
+        "relation_type": "produced_lesson",
+        "target_node": "performance_confidence",
+        "status": "candidate",
+        "confidence": "high",
+        "inference_level": "explicit",
+        "evidence_refs": [
+          "D1:16"
+        ],
+        "supporting_units": [
+          "unit-jon-005"
+        ]
+      }
+    ]
+  },
+  "evidence_refs": [
+    "D1:16",
+    "D1:20",
+    "D1:22",
+    "D1:24",
+    "D1:26",
+    "D1:4",
+    "D1:6",
+    "D1:8",
+    "D2:2",
+    "D2:4",
+    "D2:6",
+    "D3:1",
+    "D3:13",
+    "D4:11",
+    "D4:13",
+    "D4:3",
+    "D4:5",
+    "D4:9",
+    "D5:10",
+    "D5:16",
+    "D5:20",
+    "D5:22",
+    "D5:4"
+  ],
+  "uncertainty": [
+    "The studio timeline may be evolving: some evidence says Jon is searching for a location, later evidence says he loves running his own studio.",
+    "Festival, show, and competition references should not be merged without additional evidence.",
+    "Candidate inference nodes such as need_encouragement and performance_confidence should not be treated as stable facts."
+  ],
+  "safety_or_privacy_notes": [
+    "This packet uses only public dataset material.",
+    "Gina can appear only as relationship/context/evidence object, not as Jon portrait content.",
+    "Do not present accepted_for_experiment as real user confirmation."
+  ],
+  "recommended_assistance_style": {
+    "useful_moves": [
+      "When helping Jon with planning, connect advice to dance-studio goals, location constraints, and balancing dance/business workload.",
+      "When offering motivation, use encouragement carefully because support from Gina appears meaningful, but avoid overstating dependency.",
+      "When reasoning about decisions, preserve evidence refs and distinguish stable values from event-specific episodes."
+    ],
+    "avoid": [
+      "Do not assume the studio is fully open without checking later evidence.",
+      "Do not turn one competition win into a broad stable trait without more evidence.",
+      "Do not mix Gina's store/business details into Jon's own portrait."
+    ]
+  }
+}
