@@ -1647,9 +1647,17 @@ def validate_model_payload(profile: ProposalProfile, payload: dict[str, Any]) ->
     return validate_v01_model_payload(profile, payload)
 
 
+def strip_outer_json_fence(output_text: str) -> str:
+    text = str(output_text or "").strip()
+    match = re.fullmatch(r"```(?:json|JSON)?\s*(.*?)\s*```", text, flags=re.DOTALL)
+    if match:
+        return match.group(1).strip()
+    return text
+
+
 def parse_model_output(profile: ProposalProfile, result: ProviderResult) -> tuple[dict[str, Any] | None, list[str]]:
     try:
-        payload = json.loads(result.output_text)
+        payload = json.loads(strip_outer_json_fence(result.output_text))
     except json.JSONDecodeError:
         return None, ["invalid_json"]
     if not isinstance(payload, dict):

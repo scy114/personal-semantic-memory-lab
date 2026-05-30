@@ -97,11 +97,15 @@ class RoutingSalienceSidecarTests(unittest.TestCase):
         tokens = tokenize(text)
         scored = salience_for_text(text, terms, {})
 
-        if optional_wheel_status()["jieba"] == "available":
+        status = optional_wheel_status()
+        if status["jieba"] == "available":
             self.assertIn("失业", tokens)
             self.assertIn("工作室", tokens)
             self.assertEqual(scored["feature_summary"]["language_hints"]["tokenizer"], "jieba")
-            self.assertIsNotNone(scored["feature_summary"]["external_metrics"]["wordfreq"]["zh_min_zipf"])
+            if status["wordfreq"] == "available":
+                self.assertIsNotNone(scored["feature_summary"]["external_metrics"]["wordfreq"]["zh_min_zipf"])
+            else:
+                self.assertEqual(scored["feature_summary"]["external_metrics"]["module_status"]["wordfreq"], "missing")
         self.assertGreater(scored["feature_summary"]["token_count"], 0)
         self.assertIn("失业", scored["feature_summary"]["top_keyphrases"])
 

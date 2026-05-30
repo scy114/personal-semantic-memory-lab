@@ -23,6 +23,7 @@ from tools.prebuild_routing import (
     options_from_args,
     run_prebuild_routing,
 )
+from tools.maintenance.latest_view import resolve_latest_view_input
 
 
 SUPPORTED_DUPLICATE_POLICIES = {"fail", "overwrite_generated"}
@@ -691,7 +692,13 @@ def run_build(args: argparse.Namespace) -> dict[str, Any]:
     if args.duplicate_policy not in SUPPORTED_DUPLICATE_POLICIES:
         raise ValueError(f"Unsupported duplicate_policy: {args.duplicate_policy}")
 
-    memory_units_path = workspace / "memory" / "memory_units.jsonl"
+    memory_units_path, memory_units_input = resolve_latest_view_input(
+        workspace=workspace,
+        layer="s1",
+        canonical_path=workspace / "memory" / "memory_units.jsonl",
+        explicit_path=Path(args.s1_latest_view).resolve() if getattr(args, "s1_latest_view", None) else None,
+        mode=getattr(args, "latest_view_mode", "auto"),
+    )
     evidence_path = workspace / "evidence" / "evidence.jsonl"
     build_manifest_path = workspace / "evidence" / "build_manifest.json"
     if not memory_units_path.exists():
@@ -746,6 +753,7 @@ def run_build(args: argparse.Namespace) -> dict[str, Any]:
         "graph_nodes": len(nodes),
         "graph_edges": len(edges),
         "input_memory_units": len(memory_units),
+        "input_memory_units_source": memory_units_input["source"],
         "build_source_s2_proposal_outcomes": 1 if build_source == "s2_proposal_outcomes" else 0,
     }
     counts.update(proposal_counts)
@@ -769,6 +777,9 @@ def run_build(args: argparse.Namespace) -> dict[str, Any]:
         "blocked": False,
         "blockers": [],
         "build_source": build_source,
+        "latest_view_inputs": {
+            "s1_memory_units": memory_units_input,
+        },
         "started_at": started_at,
         "last_updated": now_iso(),
         "latest_outputs": {
@@ -791,6 +802,7 @@ def run_build(args: argparse.Namespace) -> dict[str, Any]:
 - started_at: `{started_at}`
 - completed_at: `{status["last_updated"]}`
 - input_memory_units: `{memory_units_path}`
+- input_memory_units_source: `{memory_units_input["source"]}`
 - input_evidence_registry: `{evidence_path}`
 - input_evidence_build_manifest: `{build_manifest_path if build_manifest_path.exists() else "missing"}`
 - build_source: `{build_source}`
@@ -818,6 +830,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--run-id", default=None)
     parser.add_argument("--max-units", type=int, default=30)
     parser.add_argument("--duplicate-policy", default="fail", choices=sorted(SUPPORTED_DUPLICATE_POLICIES))
+    parser.add_argument("--latest-view-mode", default="auto", choices=["auto", "require", "off"])
+    parser.add_argument("--s1-latest-view", default=None, help="Explicit S1 latest-view JSONL. Defaults to maintenance/latest_views/s1_latest_view.jsonl when present.")
     add_prebuild_arguments(parser, default_profile=DEFAULT_S2_PROPOSAL_PROFILE)
     return parser.parse_args(argv)
 

@@ -17,6 +17,7 @@ from typing import Any, Iterable
 
 SCHEMA_VERSION = "maintenance.latest_view.v0.4"
 MANIFEST_SCHEMA_VERSION = "maintenance.latest_view_manifest.v0.4"
+LATEST_VIEW_DIR = Path("maintenance") / "latest_views"
 
 LAYER_IMPACT_KEYS = {
     "evidence": "evidence_refs",
@@ -26,17 +27,23 @@ LAYER_IMPACT_KEYS = {
     "s1_index": "s1_index_entry_ids",
     "s2_index": "s2_index_entry_ids",
     "graph": "graph_candidate_ids",
+    "graph_nodes": "graph_candidate_ids",
+    "graph_edges": "graph_candidate_ids",
+    "graph_claims": "graph_candidate_ids",
     "query": "query_packet_ids",
 }
 
 LAYER_ID_FIELDS = {
     "evidence": ["evidence_ref", "id"],
-    "s0b": ["s0b_unit_id", "unit_id", "id"],
+    "s0b": ["s0b_unit_id", "text_unit_id", "raw_span_id", "unit_id", "evidence_ref", "id"],
     "s1": ["memory_id", "id"],
     "s2": ["unit_id", "id"],
     "s1_index": ["index_entry_id", "vector_entry_id", "object_id", "id"],
     "s2_index": ["vector_entry_id", "index_entry_id", "object_id", "id"],
     "graph": ["node_id", "edge_id", "claim_id", "evidence_link_id", "id"],
+    "graph_nodes": ["node_id", "id"],
+    "graph_edges": ["edge_id", "id"],
+    "graph_claims": ["claim_id", "id"],
     "query": ["packet_id", "query_id", "id"],
 }
 
@@ -44,6 +51,8 @@ STATUS_FIELDS = [
     "maintenance_status",
     "latest_view_status",
     "lifecycle_status",
+    "s0b_status",
+    "source_status",
     "status",
 ]
 
@@ -58,6 +67,67 @@ INACTIVE_STATUS_VALUES = {
     "stale_candidate",
     "superseded",
 }
+
+SUPPORTED_LATEST_VIEW_MODES = {"auto", "require", "off"}
+
+
+def default_latest_view_dir(workspace: Path) -> Path:
+    return workspace / LATEST_VIEW_DIR
+
+
+def default_latest_view_path(workspace: Path, layer: str) -> Path:
+    return default_latest_view_dir(workspace) / f"{layer}_latest_view.jsonl"
+
+
+def resolve_latest_view_input(
+    *,
+    workspace: Path,
+    layer: str,
+    canonical_path: Path,
+    explicit_path: Path | None = None,
+    mode: str = "auto",
+) -> tuple[Path, dict[str, Any]]:
+    if mode not in SUPPORTED_LATEST_VIEW_MODES:
+        raise ValueError(f"Unsupported latest_view_mode: {mode}")
+    if explicit_path is not None:
+        if not explicit_path.exists():
+            raise FileNotFoundError(f"Explicit latest-view path not found: {explicit_path}")
+        return explicit_path, {
+            "mode": mode,
+            "layer": layer,
+            "source": "explicit_latest_view",
+            "path": str(explicit_path),
+            "canonical_fallback_path": str(canonical_path),
+            "warnings": [],
+        }
+    if mode == "off":
+        return canonical_path, {
+            "mode": mode,
+            "layer": layer,
+            "source": "canonical",
+            "path": str(canonical_path),
+            "warnings": ["latest_view_disabled"],
+        }
+    latest_path = default_latest_view_path(workspace, layer)
+    if latest_path.exists():
+        return latest_path, {
+            "mode": mode,
+            "layer": layer,
+            "source": "default_latest_view",
+            "path": str(latest_path),
+            "canonical_fallback_path": str(canonical_path),
+            "warnings": [],
+        }
+    if mode == "require":
+        raise FileNotFoundError(f"Required latest-view path not found: {latest_path}")
+    return canonical_path, {
+        "mode": mode,
+        "layer": layer,
+        "source": "canonical_fallback",
+        "path": str(canonical_path),
+        "expected_latest_view_path": str(latest_path),
+        "warnings": ["latest_view_not_found_using_canonical_fallback"],
+    }
 
 
 def now_iso() -> str:

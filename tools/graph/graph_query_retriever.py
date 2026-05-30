@@ -34,10 +34,12 @@ from tools.graph.networkx_graph_utility_runner import (
 SCHEMA_VERSION = "graph_v03.query_retriever.v0.1"
 DEFAULT_PROJECTION = "review_aware_graph"
 DEFAULT_GRAPH_DIR_CANDIDATES = [
+    "graph_current",
     "graph_v03_consolidation_provider_80",
     "graph_v03_consolidation",
     "graph_v03_prototype",
 ]
+LATEST_VIEW_SUBDIR = "latest_views"
 
 # Fallback guard for leaked unresolved reference nodes. The design source is
 # GraphRAG/Graphiti-style guidance: resolve pronouns/articles during extraction
@@ -216,12 +218,25 @@ class BM25Lite:
 def discover_graph_dir(workspace: Path, explicit: str | Path | None) -> Path | None:
     if explicit:
         path = Path(explicit).resolve()
-        return path if (path / "graph_nodes_table.jsonl").exists() and (path / "graph_edges_table.jsonl").exists() else None
+        return path if graph_dir_has_query_tables(path) else None
     for name in DEFAULT_GRAPH_DIR_CANDIDATES:
         path = workspace / name
-        if (path / "graph_nodes_table.jsonl").exists() and (path / "graph_edges_table.jsonl").exists():
+        if graph_dir_has_query_tables(path):
             return path
     return None
+
+
+def graph_dir_has_query_tables(path: Path) -> bool:
+    return (
+        (path / "graph_nodes_table.jsonl").exists()
+        and (path / "graph_edges_table.jsonl").exists()
+    ) or (
+        (path / LATEST_VIEW_SUBDIR / "graph_nodes_latest_view.jsonl").exists()
+        and (path / LATEST_VIEW_SUBDIR / "graph_edges_latest_view.jsonl").exists()
+    ) or (
+        (path / "graph_nodes_latest_view.jsonl").exists()
+        and (path / "graph_edges_latest_view.jsonl").exists()
+    )
 
 
 def discover_profile_dir(graph_dir: Path) -> Path | None:
@@ -240,6 +255,17 @@ def read_community_assist_rows(path: Path) -> list[dict[str, Any]]:
     if path.is_dir():
         path = path / "graph_community_report_assists.jsonl"
     return read_jsonl(path)
+
+
+def latest_or_canonical(graph_dir: Path, latest_name: str, canonical_name: str) -> Path:
+    for path in (
+        graph_dir / LATEST_VIEW_SUBDIR / latest_name,
+        graph_dir / latest_name,
+        graph_dir / canonical_name,
+    ):
+        if path.exists():
+            return path
+    return graph_dir / canonical_name
 
 
 def apply_community_assists(reports: list[dict[str, Any]], assists_path: Path | None) -> tuple[list[dict[str, Any]], Path | None]:
@@ -277,9 +303,9 @@ def load_graph_query_data(
     profile_dir: Path | None = None,
     community_assists_path: Path | None = None,
 ) -> GraphQueryData:
-    nodes = read_jsonl(graph_dir / "graph_nodes_table.jsonl")
-    edges = read_jsonl(graph_dir / "graph_edges_table.jsonl")
-    claims = read_jsonl(graph_dir / "graph_claims_table.jsonl")
+    nodes = read_jsonl(latest_or_canonical(graph_dir, "graph_nodes_latest_view.jsonl", "graph_nodes_table.jsonl"))
+    edges = read_jsonl(latest_or_canonical(graph_dir, "graph_edges_latest_view.jsonl", "graph_edges_table.jsonl"))
+    claims = read_jsonl(latest_or_canonical(graph_dir, "graph_claims_latest_view.jsonl", "graph_claims_table.jsonl"))
     profile_dir = profile_dir.resolve() if profile_dir else discover_profile_dir(graph_dir)
     community_reports = read_jsonl(profile_dir / "graph_community_reports.jsonl") if profile_dir else []
     community_reports, resolved_assists_path = apply_community_assists(community_reports, community_assists_path)

@@ -25,6 +25,7 @@ from tools.prebuild_routing import (
     options_from_args,
     run_prebuild_routing,
 )
+from tools.maintenance.latest_view import resolve_latest_view_input
 
 
 SUPPORTED_RUN_SCOPES = {"evidence_only", "evidence_plus_memory", "full_s1_build"}
@@ -181,6 +182,8 @@ class BuildInputs:
     duplicate_policy: str
     run_id: str
     started_at: str
+    latest_view_mode: str
+    s0b_latest_view_path: Path | None
     raw_sources: list[dict[str, Any]]
     bundle: dict[str, Any]
 
@@ -225,6 +228,8 @@ def load_inputs(
     modeled_subject_id: str | None,
     run_id: str | None,
     started_at: str,
+    latest_view_mode: str = "auto",
+    s0b_latest_view_path: Path | None = None,
 ) -> BuildInputs:
     raw_sources_path = workspace / "raw" / "organization" / "raw_sources.jsonl"
     bundle_path = workspace / "raw" / "organization" / "bundle.json"
@@ -248,6 +253,8 @@ def load_inputs(
         duplicate_policy=duplicate_policy,
         run_id=resolved_run_id,
         started_at=started_at,
+        latest_view_mode=latest_view_mode,
+        s0b_latest_view_path=s0b_latest_view_path,
         raw_sources=raw_sources,
         bundle=bundle,
     )
@@ -705,7 +712,13 @@ def default_generic_text_policy(raw_span_id: str, source_specific_ref: str, star
 def load_generic_text_units(inputs: BuildInputs, source: dict[str, Any]) -> list[dict[str, Any]]:
     """Load S0B sentence text units for a generic text raw source when available."""
 
-    text_units_path = inputs.workspace / "raw" / "organization" / "text_units.jsonl"
+    text_units_path, latest_view_meta = resolve_latest_view_input(
+        workspace=inputs.workspace,
+        layer="s0b",
+        canonical_path=inputs.workspace / "raw" / "organization" / "text_units.jsonl",
+        explicit_path=inputs.s0b_latest_view_path,
+        mode=inputs.latest_view_mode,
+    )
     if not text_units_path.exists():
         return []
     raw_source_id = source.get("raw_source_id")
@@ -715,6 +728,8 @@ def load_generic_text_units(inputs: BuildInputs, source: dict[str, Any]) -> list
         for row in rows
         if row.get("raw_source_id") == raw_source_id and row.get("unit_type") == "sentence"
     ]
+    for row in sentence_units:
+        row.setdefault("_s0b_latest_view_input", latest_view_meta)
     return sentence_units
 
 
@@ -2259,6 +2274,8 @@ def run_build(args: argparse.Namespace) -> dict[str, Any]:
         modeled_subject_id=args.modeled_subject_id,
         run_id=args.run_id,
         started_at=started_at,
+        latest_view_mode=getattr(args, "latest_view_mode", "auto"),
+        s0b_latest_view_path=Path(args.s0b_latest_view).resolve() if getattr(args, "s0b_latest_view", None) else None,
     )
     preparation = prepare_output_workspace(inputs)
     copy_s0b_assets(inputs)
@@ -2290,6 +2307,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--run-id", help="Override run id.")
     parser.add_argument("--run-scope", default="evidence_only", help="evidence_only, evidence_plus_memory, or full_s1_build.")
     parser.add_argument("--duplicate-policy", default="fail", help="fail or overwrite_generated.")
+    parser.add_argument("--latest-view-mode", default="auto", choices=["auto", "require", "off"])
+    parser.add_argument("--s0b-latest-view", help="Explicit S0B latest-view JSONL. Defaults to maintenance/latest_views/s0b_latest_view.jsonl when present.")
     add_prebuild_arguments(parser, default_profile=DEFAULT_S1_PROPOSAL_PROFILE)
     return parser
 

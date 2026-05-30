@@ -179,7 +179,8 @@ class PreBuildRoutingIntegrationTests(unittest.TestCase):
                 )
             )
 
-            proposal_dir = Path(result["prebuild_routing"]["proposal"]["output_dir"])
+            prebuild = result["prebuild_routing"]
+            proposal_dir = Path(prebuild["proposal"]["output_dir"])
             proposals = read_jsonl(proposal_dir / "proposal_outcomes.ai.jsonl")
             proposal_manifest = json.loads((proposal_dir / "proposal_run_manifest.json").read_text(encoding="utf-8"))
             self.assertTrue(proposals)
@@ -190,11 +191,20 @@ class PreBuildRoutingIntegrationTests(unittest.TestCase):
             self.assertTrue((output_workspace / "memory" / "memory_units.jsonl").exists())
             units = read_jsonl(output_workspace / "memory" / "memory_units.jsonl")
             llm_units = [unit for unit in units if unit["processing_method"] == "llm_assisted"]
-            self.assertTrue(llm_units)
-            self.assertTrue(all(unit["original_text"] for unit in llm_units))
-            self.assertTrue(all(unit["processed_text"] for unit in llm_units))
-            self.assertTrue(all(unit["evidence_refs"] == unit["backpointer_refs"] for unit in llm_units))
-            self.assertTrue(all(unit["llm_assist_used"] is True for unit in llm_units))
+            route_counts = prebuild["route"]["counts"]["route_counts"]
+            if route_counts.get("weak_llm_proposal") or route_counts.get("strong_llm_proposal"):
+                self.assertTrue(llm_units)
+                self.assertTrue(all(unit["original_text"] for unit in llm_units))
+                self.assertTrue(all(unit["processed_text"] for unit in llm_units))
+                self.assertTrue(all(unit["evidence_refs"] == unit["backpointer_refs"] for unit in llm_units))
+                self.assertTrue(all(unit["llm_assist_used"] is True for unit in llm_units))
+            else:
+                # The public mirror intentionally does not vendor external
+                # routing resources. In that environment the calibrated router
+                # may conservatively downgrade to script-only; this must remain
+                # explicit instead of pretending LLM assist ran.
+                self.assertTrue(route_counts.get("script_only"))
+                self.assertFalse(llm_units)
             self.assertFalse((output_workspace / "portrait" / "reviewed_units.jsonl").exists())
 
     def test_s2_route_and_propose_materializes_from_proposal_candidates_not_all_memory_units(self):
