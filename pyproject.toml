@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "personal-semantic-memory-lab"
-version = "0.4.0"
+version = "0.4.1"
 description = "Evidence-bound personal semantic memory and graph memory lab."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -35,5 +35,5 @@ embedding = [
   "transformers",
 ]
 
-[tool.setuptools]
-packages = ["tools"]
+[tool.setuptools.packages.find]
+include = ["tools*"]

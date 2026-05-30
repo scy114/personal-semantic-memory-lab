@@ -38,6 +38,8 @@ signal, not proof.
 - `v0.4`: incremental maintenance skeleton, including operation log, impact
   resolver, latest views, S0B batch registration, S1/S2/graph affected reports,
   and incremental-vs-full-observation comparison.
+- `v0.41`: unified workflow entrypoint for status, full build, graph build,
+  query, and incremental review/finalize orchestration.
 
 ## Repository Layout
 
@@ -73,6 +75,47 @@ python -m unittest discover -s tests
 
 The test suite is designed to run without live LLM calls. Provider-backed
 experiments require explicit configuration and are not part of default CI.
+
+## Unified Workflow Entrypoint
+
+Daily use should start from the thin workflow runner:
+
+```powershell
+python -m tools.workflow_runner --help
+python -m tools.workflow_runner status --workspace <workspace>
+```
+
+The public mirror includes the v0.41 runner and tests, but does not include
+private `users/` workspaces. Use public fixtures or your own local workspace.
+
+Mock/synthetic workflow examples:
+
+```powershell
+python -m tools.workflow_runner build-full `
+  --workspace <workspace> `
+  --modeled-user-id <user_id> `
+  --target-participant <user_id> `
+  --proposal-provider mock `
+  --duplicate-policy overwrite_generated
+```
+
+```powershell
+python -m tools.workflow_runner build-graph `
+  --workspace <workspace> `
+  --provider mock_regex_baseline `
+  --max-items 20 `
+  --duplicate-policy overwrite_generated
+```
+
+```powershell
+python -m tools.workflow_runner query `
+  --workspace <workspace> `
+  --question "What should this memory system retrieve?"
+```
+
+Live provider runs are explicitly gated and require `--allow-live-api`.
+Mock and regex graph extraction are smoke/baseline paths only; they are not
+quality proof or the main fidelity path.
 
 ## Provider Configuration
 

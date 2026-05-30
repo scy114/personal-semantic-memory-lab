@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
+import hashlib
 import json
 import math
 import re
@@ -31,9 +32,11 @@ if str(ROOT) not in sys.path:
 
 from tools.step1.step1_toolbox import LocalStep1Toolbox
 from tools.graph.graph_query_retriever import discover_graph_dir, retrieve_graph_query_package
+from tools.maintenance.latest_view import resolve_latest_view_input
 from tools.step2.s23_answer_context_runner import build_s23_answer_context, dual_branch_summary, render_s23_prompt_context
 
 DEFAULT_MODEL_ID = "Qwen/Qwen3-Embedding-0.6B"
+HASH_MODEL_ID = "deterministic-hash-embedding-v0.1"
 ACTIVE_STATUSES = {"active", "accepted", "accepted_for_experiment", "accepted_by_user", "current"}
 INACTIVE_STATUSES = {"rejected", "archived", "superseded", "unresolved"}
 KNOWN_ROUTES = {
@@ -216,6 +219,20 @@ def normalize_vector_matrix(matrix: np.ndarray) -> np.ndarray:
     return matrix / norms
 
 
+def hash_embedding(text: str, dimension: int) -> np.ndarray:
+    tokens = [token for token in str(text or "").lower().replace("\n", " ").split(" ") if token] or [str(text or "")]
+    vector = np.zeros((dimension,), dtype="float32")
+    for token in tokens:
+        digest = hashlib.sha256(token.encode("utf-8")).digest()
+        index = int.from_bytes(digest[:4], "big") % dimension
+        sign = 1.0 if digest[4] % 2 == 0 else -1.0
+        vector[index] += sign
+    norm = float(np.linalg.norm(vector))
+    if norm:
+        vector = vector / norm
+    return vector.astype("float32")
+
+
 def stable_id(prefix: str, value: str) -> str:
     safe = re.sub(r"[^a-zA-Z0-9_.:-]+", "-", value.strip()).strip("-")
     return f"{prefix}:{safe or 'unknown'}"
@@ -355,6 +372,19 @@ class Embedder:
                 norms[norms == 0] = 1.0
                 vectors.append(pooled / norms)
         return np.vstack(vectors).astype(np.float32)
+
+
+class HashEmbedder:
+    def __init__(self, dimension: int) -> None:
+        self.device = "not_applicable"
+        self.model_id = HASH_MODEL_ID
+        self.dimension = dimension
+
+    def encode(self, text: str) -> np.ndarray:
+        return hash_embedding(text, self.dimension)
+
+    def encode_batch(self, texts: list[str], *, batch_size: int = 32) -> np.ndarray:
+        return np.vstack([self.encode(text) for text in texts]) if texts else np.zeros((0, self.dimension), dtype=np.float32)
 
 
 class GraphReranker:
@@ -680,14 +710,35 @@ def load_workspace(args: argparse.Namespace) -> WorkspaceAssets:
 
     default_manifest, default_entries, default_vectors = default_index_paths(workspace)
     evidence_path = discover_evidence_path(workspace, resolve_path(args.evidence))
+    reviewed_units_path, reviewed_units_input = resolve_latest_view_input(
+        workspace=workspace,
+        layer="s2",
+        canonical_path=workspace / "portrait" / "reviewed_units.jsonl",
+        explicit_path=resolve_path(args.reviewed_units),
+        mode=getattr(args, "latest_view_mode", "auto"),
+    )
+    graph_nodes_path, graph_nodes_input = resolve_latest_view_input(
+        workspace=workspace,
+        layer="graph_nodes",
+        canonical_path=workspace / "graph" / "nodes.jsonl",
+        explicit_path=resolve_path(args.graph_nodes),
+        mode=getattr(args, "latest_view_mode", "auto"),
+    )
+    graph_edges_path, graph_edges_input = resolve_latest_view_input(
+        workspace=workspace,
+        layer="graph_edges",
+        canonical_path=workspace / "graph" / "edges.jsonl",
+        explicit_path=resolve_path(args.graph_edges),
+        mode=getattr(args, "latest_view_mode", "auto"),
+    )
     paths = WorkspacePaths(
         workspace=workspace,
         manifest=workspace / "manifest.yaml",
-        reviewed_units=resolve_path(args.reviewed_units) or workspace / "portrait" / "reviewed_units.jsonl",
+        reviewed_units=reviewed_units_path,
         portrait_json=resolve_path(args.portrait_json) or workspace / "portrait" / "current_portrait.json",
         portrait_md=workspace / "portrait" / "current_portrait.md",
-        graph_nodes=resolve_path(args.graph_nodes) or workspace / "graph" / "nodes.jsonl",
-        graph_edges=resolve_path(args.graph_edges) or workspace / "graph" / "edges.jsonl",
+        graph_nodes=graph_nodes_path,
+        graph_edges=graph_edges_path,
         base_packet=resolve_path(args.base_packet) or workspace / "packets" / "base_assistance_packet.json",
         evidence=evidence_path,
         index_manifest=resolve_path(args.index_manifest) or default_manifest,
@@ -707,9 +758,15 @@ def load_workspace(args: argparse.Namespace) -> WorkspaceAssets:
         if len(index_entries) != vectors.shape[0]:
             raise ValueError(f"Index entry count {len(index_entries)} does not match vector rows {vectors.shape[0]}")
 
+    manifest = parse_manifest(paths.manifest)
+    manifest["_latest_view_inputs"] = {
+        "s2_reviewed_units": reviewed_units_input,
+        "graph_nodes": graph_nodes_input,
+        "graph_edges": graph_edges_input,
+    }
     return WorkspaceAssets(
         paths=paths,
-        manifest=parse_manifest(paths.manifest),
+        manifest=manifest,
         reviewed_units=read_jsonl(paths.reviewed_units),
         portrait_json=read_json(paths.portrait_json, default={}),
         graph_nodes=read_jsonl(paths.graph_nodes, required=False),
@@ -2368,6 +2425,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--needs-graph", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--needs-temporal-filter", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--model-id", default=DEFAULT_MODEL_ID)
+    parser.add_argument(
+        "--embedding-backend",
+        default="qwen_local",
+        choices=["qwen_local", "hash"],
+        help="Embedding backend for query vectors. hash is deterministic and intended for integration smoke only.",
+    )
+    parser.add_argument("--hash-dimension", type=int, default=None)
     parser.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda"])
     parser.add_argument("--lexical-only", action="store_true", help="Disable embedding query.")
     parser.add_argument("--bm25-weight", type=float, default=None, help="Explicit BM25 fusion weight. If omitted, route defaults are used.")
@@ -2437,6 +2501,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--graph-edges", default=None)
     parser.add_argument("--base-packet", default=None)
     parser.add_argument("--evidence", default=None)
+    parser.add_argument("--latest-view-mode", default="auto", choices=["auto", "require", "off"])
     parser.add_argument("--step1-root", default=None, help="Optional Step 1 asset root. Defaults to the workspace or workspace/step1 when available.")
     parser.add_argument("--disable-step1-toolbox", action="store_true", help="Disable Step 1 toolbox support checks and use local metadata resolution only.")
     parser.add_argument(
@@ -2479,7 +2544,16 @@ def main() -> None:
 
     embedder = None
     if not args.lexical_only:
-        embedder = Embedder(args.model_id, args.device)
+        if args.embedding_backend == "hash":
+            manifest_embedding = assets.index_manifest.get("embedding") if isinstance(assets.index_manifest, dict) else {}
+            dimension = (
+                args.hash_dimension
+                or int(manifest_embedding.get("embedding_dim") or 0)
+                or (assets.vectors.shape[1] if assets.vectors is not None and assets.vectors.ndim == 2 else 64)
+            )
+            embedder = HashEmbedder(dimension)
+        else:
+            embedder = Embedder(args.model_id, args.device)
 
     graph_reranker = None
     if args.graph_rerank_mode == "cross_encoder":
@@ -2497,7 +2571,8 @@ def main() -> None:
         "workspace": str(assets.paths.workspace),
         "output": str(args.output),
         "python": sys.executable,
-        "model_id": None if args.lexical_only else args.model_id,
+        "model_id": None if args.lexical_only else (HASH_MODEL_ID if args.embedding_backend == "hash" else args.model_id),
+        "embedding_backend": "disabled" if args.lexical_only else args.embedding_backend,
         "lexical_only": args.lexical_only,
         "graph_rerank": {
             "mode": args.graph_rerank_mode,
@@ -2544,7 +2619,7 @@ def main() -> None:
                 f"- Questions: {len(questions)}",
                 f"- Query units: {len(query_units)}",
                 f"- BM25: enabled, tokenizer `{bm25_index.manifest()['tokenizer_policy']}`",
-                f"- Embedding: {'disabled' if args.lexical_only else args.model_id}",
+                f"- Embedding: {'disabled' if args.lexical_only else (HASH_MODEL_ID if args.embedding_backend == 'hash' else args.model_id)}",
                 f"- Step 1 toolbox: {step1_status.get('status')} ({step1_status.get('root')})",
                 "",
                 "## Runs",

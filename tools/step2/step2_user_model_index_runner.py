@@ -17,8 +17,11 @@ from typing import Any
 
 import numpy as np
 
+from tools.maintenance.latest_view import resolve_latest_view_input
+
 
 DEFAULT_MODEL = "Qwen/Qwen3-Embedding-0.6B"
+HASH_MODEL = "deterministic-hash-embedding-v0.1"
 
 
 def read_json(path: Path) -> dict[str, Any]:
@@ -78,6 +81,20 @@ def object_hash(obj: dict[str, Any]) -> str:
 
 def safe_model_name(model: str) -> str:
     return model.replace("/", "__").replace("\\", "__")
+
+
+def hash_embedding(text: str, dimension: int) -> np.ndarray:
+    tokens = [token for token in text.lower().replace("\n", " ").split(" ") if token] or [text]
+    vector = np.zeros((dimension,), dtype="float32")
+    for token in tokens:
+        digest = hashlib.sha256(token.encode("utf-8")).digest()
+        index = int.from_bytes(digest[:4], "big") % dimension
+        sign = 1.0 if digest[4] % 2 == 0 else -1.0
+        vector[index] += sign
+    norm = float(np.linalg.norm(vector))
+    if norm:
+        vector = vector / norm
+    return vector.astype("float32")
 
 
 def entry_text(unit: dict[str, Any]) -> str:
@@ -213,10 +230,31 @@ def encode_qwen_texts(
     }
 
 
+def encode_hash_texts(*, texts: list[str], dimension: int) -> tuple[np.ndarray, dict[str, Any]]:
+    started = time.perf_counter()
+    vectors = np.vstack([hash_embedding(text, dimension) for text in texts]) if texts else np.zeros((0, dimension), dtype="float32")
+    return vectors.astype("float32"), {
+        "model": HASH_MODEL,
+        "model_class": "deterministic_hash_embedding",
+        "embedding_dim": dimension,
+        "elapsed_sec": round(time.perf_counter() - started, 3),
+        "device": "not_applicable",
+        "max_length": "not_applicable",
+        "pooling": "not_applicable",
+        "note": "Deterministic hash backend is for integration smoke only; it is not semantic retrieval quality proof.",
+    }
+
+
 def build_index(args: argparse.Namespace) -> dict[str, Any]:
     workspace = Path(args.workspace).resolve()
     output_path = Path(args.output_path).resolve() if args.output_path else workspace / "indexes"
-    reviewed_units_path = workspace / "portrait" / "reviewed_units.jsonl"
+    reviewed_units_path, reviewed_units_input = resolve_latest_view_input(
+        workspace=workspace,
+        layer="s2",
+        canonical_path=workspace / "portrait" / "reviewed_units.jsonl",
+        explicit_path=Path(args.s2_latest_view).resolve() if getattr(args, "s2_latest_view", None) else None,
+        mode=getattr(args, "latest_view_mode", "auto"),
+    )
     if not reviewed_units_path.exists():
         raise FileNotFoundError(f"Missing reviewed units: {reviewed_units_path}")
 
@@ -248,26 +286,38 @@ def build_index(args: argparse.Namespace) -> dict[str, Any]:
     entries = build_entries(units)
     if not entries:
         raise ValueError("No active reviewed units to index.")
-    vectors, embedding_meta = encode_qwen_texts(
-        model_name=args.model,
-        texts=[row["text"] for row in entries],
-        batch_size=args.batch_size,
-        max_length=args.max_length,
-        device_name=args.device,
-    )
+    embedding_backend = getattr(args, "embedding_backend", "qwen_local")
+    hash_dimension = int(getattr(args, "hash_dimension", 64))
+    if embedding_backend == "hash":
+        vectors, embedding_meta = encode_hash_texts(texts=[row["text"] for row in entries], dimension=hash_dimension)
+        model_name = HASH_MODEL
+    elif embedding_backend == "qwen_local":
+        vectors, embedding_meta = encode_qwen_texts(
+            model_name=args.model,
+            texts=[row["text"] for row in entries],
+            batch_size=args.batch_size,
+            max_length=args.max_length,
+            device_name=args.device,
+        )
+        model_name = args.model
+    else:
+        raise ValueError(f"Unsupported embedding backend: {embedding_backend}")
 
     write_jsonl(generic_entries, entries)
     np.save(generic_vectors, vectors)
 
     manifest = {
         "schema_version": "s2.embedding_index_manifest.v1",
-        "index_id": f"step2_user_model_embedding__{safe_model_name(args.model)}__{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}",
+        "index_id": f"step2_user_model_embedding__{safe_model_name(model_name)}__{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}",
         "index_type": "step2_user_model_embedding",
         "truth_status": "rebuildable_query_asset_not_truth",
         "workspace_id": workspace_id,
         "modeled_user_id": modeled_user_id,
         "built_from": {
             "reviewed_units": str(reviewed_units_path),
+        },
+        "latest_view_inputs": {
+            "s2_reviewed_units": reviewed_units_input,
         },
         "upstream_lineage": {
             "step2_build_status": str(status_path) if status_path.exists() else None,
@@ -285,7 +335,8 @@ def build_index(args: argparse.Namespace) -> dict[str, Any]:
             "included_statuses": ["active", "accepted_for_experiment"],
             "excluded_statuses": ["rejected", "archived", "superseded"],
         },
-        "embedding_model": args.model,
+        "embedding_backend": embedding_backend,
+        "embedding_model": model_name,
         "embedding_model_revision": "",
         "chunking_policy": "one_vector_per_reviewed_portrait_unit",
         "max_length": args.max_length,
@@ -336,7 +387,7 @@ def build_index(args: argparse.Namespace) -> dict[str, Any]:
         write_json(status_path, build_status)
 
     if args.write_model_suffix:
-        suffix = safe_model_name(args.model)
+        suffix = safe_model_name(model_name)
         write_json(output_path / f"step2_user_model_embedding_manifest.{suffix}.json", manifest)
         write_jsonl(output_path / f"step2_user_model_embedding_entries.{suffix}.jsonl", entries)
         np.save(output_path / f"step2_user_model_embedding_vectors.{suffix}.npy", vectors)
@@ -351,11 +402,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--modeled-user-id", default=None)
     parser.add_argument("--output-path", default=None)
     parser.add_argument("--model", default=DEFAULT_MODEL)
+    parser.add_argument("--embedding-backend", default="qwen_local", choices=["qwen_local", "hash"])
+    parser.add_argument("--hash-dimension", type=int, default=64)
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--max-length", type=int, default=512)
     parser.add_argument("--device", default="cpu", choices=["auto", "cpu", "cuda"])
     parser.add_argument("--duplicate-policy", default="fail", choices=["fail", "overwrite_generated"])
     parser.add_argument("--write-model-suffix", action="store_true")
+    parser.add_argument("--latest-view-mode", default="auto", choices=["auto", "require", "off"])
+    parser.add_argument("--s2-latest-view", default=None, help="Explicit S2 latest-view JSONL. Defaults to maintenance/latest_views/s2_latest_view.jsonl when present.")
     return parser.parse_args(argv)
 
 

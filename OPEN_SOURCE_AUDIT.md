@@ -2,7 +2,7 @@
 
 Status: local public mirror prepared, tested, and audited for initial review.
 
-Audit date: 2026-05-26
+Audit date: 2026-05-31
 
 ## Can Publish
 
@@ -15,8 +15,8 @@ Audit date: 2026-05-26
 ## Validation
 
 - Local tests passed:
-  `E:\code\anaconda\envs\lcoral\python.exe -m unittest discover -s tests`
-- Result: `Ran 233 tests ... OK`
+  `python -m unittest discover -s tests`
+- Result: `Ran 282 tests in 12.179s ... OK`
 - CI workflow uses the same unittest command.
 - Live provider tests are not enabled by default.
 
@@ -36,6 +36,10 @@ Audit date: 2026-05-26
 No real API key was found by local grep audit. Placeholder environment variable
 names such as `OPENAI_API_KEY` may appear in examples and code. Live calls are
 disabled by default and require `ALLOW_LIVE_API=true`.
+
+The 2026-05-31 audit found only expected code/example references for API-key
+loading and live authorization text. No concrete provider secret or private
+provider URL was found.
 
 Checked categories included:
 

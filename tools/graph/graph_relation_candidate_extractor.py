@@ -797,6 +797,73 @@ def entity_candidates_for_clause(
     return candidates
 
 
+def endpoint_entity_candidates_for_relations(
+    packet: dict[str, Any],
+    relation_rows: list[dict[str, Any]],
+    lane: str,
+) -> list[dict[str, Any]]:
+    source_text = packet_text(packet)
+    source_excerpt = clamp_excerpt(source_text)
+    source_perspective = extract_subject_hint(packet)
+    primary_evidence_refs = unique_strings(packet.get("primary_evidence_refs"), packet.get("evidence_refs"))
+    source_refs = unique_strings(packet.get("source_refs"))
+    raw_backpointer_refs = unique_strings(packet.get("raw_backpointer_refs"))
+    route_refs = unique_strings(packet.get("route_refs"))
+    proposal_refs = unique_strings(packet.get("proposal_refs"))
+    review_refs = unique_strings(packet.get("review_refs"))
+    temporal_scope = packet.get("temporal_scope") or {}
+    rows: list[dict[str, Any]] = []
+    seen: set[tuple[str, str]] = set()
+    for relation in relation_rows:
+        endpoints = [
+            (
+                str(relation.get("source_node_hint") or ""),
+                infer_entity_type(str(relation.get("source_node_hint") or ""), fallback="unknown"),
+            ),
+            (
+                str(relation.get("target_node_hint") or ""),
+                str(relation.get("entity_type_hint") or infer_entity_type(str(relation.get("target_node_hint") or ""), fallback="unknown")),
+            ),
+        ]
+        for label, entity_type_hint in endpoints:
+            label = clean_phrase(label)
+            key = (normalize_key(label), entity_type_hint)
+            if not valid_target_hint(label) or key in seen:
+                continue
+            seen.add(key)
+            rows.append(
+                base_candidate_row(
+                    schema_version=ENTITY_SCHEMA_VERSION,
+                    candidate_kind="graph_entity_candidate",
+                    packet=packet,
+                    source_text_excerpt=source_excerpt,
+                    extracted_span=str(relation.get("extracted_span") or ""),
+                    source_node_hint=label,
+                    target_node_hint="",
+                    entity_type_hint=entity_type_hint,
+                    relation_type_hint="",
+                    directionality="n/a",
+                    source_perspective=source_perspective,
+                    attribution_status=first_non_empty(packet.get("attribution_status"), default="unknown"),
+                    temporal_scope=temporal_scope,
+                    evidence_refs=primary_evidence_refs,
+                    source_refs=source_refs,
+                    raw_backpointer_refs=raw_backpointer_refs,
+                    route_refs=route_refs,
+                    proposal_refs=proposal_refs,
+                    review_refs=review_refs,
+                    confidence_hint=first_non_empty(relation.get("confidence_hint"), packet.get("confidence"), default="unknown"),
+                    inference_level_hint=first_non_empty(relation.get("inference_level_hint"), packet.get("inference_level"), default="unknown"),
+                    warnings=unique_strings(packet_warnings(packet), [f"extraction_lane:{lane}", "endpoint_entity_from_relation_baseline"]),
+                    extra={
+                        "candidate_text": label,
+                        "lane": lane,
+                    },
+                )
+            )
+    return rows
+
+
 def extract_packet_with_lane(
     packet: dict[str, Any],
     *,
@@ -882,6 +949,7 @@ def extract_packet_with_lane(
                 max_gleanings=glean_limit - glean_used,
             )
         entity_clause_rows = entity_candidates_for_clause(packet, clause, lane)
+        entity_clause_rows.extend(endpoint_entity_candidates_for_relations(packet, relation_clause_rows, lane))
         relation_rows.extend(relation_clause_rows)
         claim_rows.extend(claim_clause_rows)
         entity_rows.extend(entity_clause_rows)
@@ -1532,8 +1600,8 @@ def build_graph_relation_candidates(
     if api_mode not in SUPPORTED_API_MODES:
         raise ValueError(f"Unsupported api_mode: {api_mode}")
     live_api_enabled, live_api_unlock_source = resolve_live_api(provider, bool(allow_live_api))
-    weak_model = weak_model or os.environ.get("OPENAI_MODEL_WEAK") or "gpt-4o-mini"
-    strong_model = strong_model or os.environ.get("OPENAI_MODEL_STRONG") or "gpt-4o"
+    weak_model = weak_model or os.environ.get("OPENAI_MODEL_WEAK") or "gpt-5.4-mini"
+    strong_model = strong_model or os.environ.get("OPENAI_MODEL_STRONG") or "gpt-5.4"
     profile = load_graph_extraction_profile(project_root, profile_path)
     if weak_prompt_path:
         profile["prompt_policies"]["weak"]["path"] = weak_prompt_path

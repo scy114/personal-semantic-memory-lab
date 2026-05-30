@@ -64,6 +64,9 @@ def review_item(
     old_id: str = "",
     old_text: str = "",
     evidence_refs: list[str] | None = None,
+    display: dict[str, Any] | None = None,
+    new_display: dict[str, Any] | None = None,
+    old_display: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     evidence_refs = evidence_refs or []
     cards = [
@@ -74,6 +77,13 @@ def review_item(
             "text": new_text,
             "evidence_refs": evidence_refs,
             "warnings": ["candidate_not_truth"],
+            "review_display": new_display
+            or {
+                "role_zh": "新增候选",
+                "status_zh": "待审核",
+                "text_zh": new_text,
+                "evidence_note_zh": "证据引用见下方。",
+            },
         }
     ]
     if old_id:
@@ -85,6 +95,13 @@ def review_item(
                 "text": old_text,
                 "evidence_refs": ["evidence:old"],
                 "warnings": [],
+                "review_display": old_display
+                or {
+                    "role_zh": "已有内容",
+                    "status_zh": "当前或历史候选",
+                    "text_zh": old_text,
+                    "evidence_note_zh": "旧证据引用见下方。",
+                },
             }
         )
     return {
@@ -102,6 +119,7 @@ def review_item(
         "default_recommendation": default,
         "review_status": "pending_review",
         "review_summary": summary,
+        "review_display": display or {},
         "risk_flags": ["candidate_not_truth", *([] if layer != "graph" else ["graph_is_not_proof"])],
         "review_rubric": [
             "Is the proposed action supported by evidence?",
@@ -131,6 +149,25 @@ def seed_review_queue(package_dir: Path) -> list[dict[str, Any]]:
             old_id="memory-old",
             old_text="Jon prefers contemporary dance for the performance.",
             evidence_refs=["evidence:new"],
+            display={
+                "title_zh": "S1 审核：当前偏好发生变化",
+                "summary_zh": "新证据表示 Jon 现在表演时优先选择 salsa；旧内容表示他偏好 contemporary dance。这里需要决定：是否把新内容作为当前候选，并把旧内容保留为历史/过期内容。",
+                "recommended_action_zh": "建议拆分为当前事实和历史事实。",
+                "why_review_zh": "这是可能覆盖旧偏好的增量更新，不能静默替换，需要人类确认。",
+                "decision_hint_zh": "如果新证据可信，点“通过推荐处理”；如果证据不足，点“需要更多证据”；如果判断不应进入系统，点“拒绝”。",
+            },
+            new_display={
+                "role_zh": "新增 S1 候选",
+                "status_zh": "待进入当前视图",
+                "text_zh": "Jon 当前表演偏好是 salsa。",
+                "evidence_note_zh": "来自新增证据 evidence:new。",
+            },
+            old_display={
+                "role_zh": "已有 S1 内容",
+                "status_zh": "可能需要转为历史/过期",
+                "text_zh": "Jon 之前表演偏好是 contemporary dance。",
+                "evidence_note_zh": "来自旧证据 evidence:old。",
+            },
         ),
         review_item(
             "review-s2-1",
@@ -145,6 +182,25 @@ def seed_review_queue(package_dir: Path) -> list[dict[str, Any]]:
             old_id="s2-old",
             old_text="Jon prefers contemporary dance for the performance.",
             evidence_refs=["evidence:new"],
+            display={
+                "title_zh": "S2 审核：把 S1 更新投影到画像层",
+                "summary_zh": "S1 已出现“当前偏好为 salsa”的候选更新。S2 层需要决定是否生成/刷新画像单元，让当前画像反映这个变化。",
+                "recommended_action_zh": "建议进入 S2 构建/刷新。",
+                "why_review_zh": "S2 是用户画像投影层，比原始证据更接近可查询记忆，因此需要单独审核。",
+                "decision_hint_zh": "如果同意该画像更新，点“通过推荐处理”；如果 S1 还不稳，点“需要更多证据”或“暂缓”。",
+            },
+            new_display={
+                "role_zh": "新增 S2 候选",
+                "status_zh": "待画像层 materialize",
+                "text_zh": "当前画像候选：Jon 表演时偏好 salsa。",
+                "evidence_note_zh": "来自新增证据 evidence:new，并承接 S1 审核。",
+            },
+            old_display={
+                "role_zh": "已有 S2 单元",
+                "status_zh": "可能需要从当前视图移出",
+                "text_zh": "旧画像单元：Jon 表演时偏好 contemporary dance。",
+                "evidence_note_zh": "来自旧证据 evidence:old。",
+            },
         ),
         review_item(
             "review-graph-1",
@@ -159,6 +215,25 @@ def seed_review_queue(package_dir: Path) -> list[dict[str, Any]]:
             old_id="edge:jon-performance-preference",
             old_text="Jon --prefers_for_performance--> contemporary dance",
             evidence_refs=["evidence:new"],
+            display={
+                "title_zh": "图审核：刷新偏好关系邻域",
+                "summary_zh": "图层看到一条候选关系：Jon 在表演场景下偏好 salsa；旧关系指向 contemporary dance。这里审核的是图候选和关系邻域刷新，不是把图当事实证明。",
+                "recommended_action_zh": "建议进入图抽取/图刷新。",
+                "why_review_zh": "图关系会影响后续关系查询、邻域扩展和可视化，所以需要和 S1/S2 分开审核。",
+                "decision_hint_zh": "如果同意继续建图，点“通过推荐处理”；如果关系方向或证据不清楚，点“需要更多证据”。",
+            },
+            new_display={
+                "role_zh": "新增图关系候选",
+                "status_zh": "待图抽取/刷新",
+                "text_zh": "Jon --表演偏好--> salsa。",
+                "evidence_note_zh": "候选关系来自 evidence:new；图不是证明。",
+            },
+            old_display={
+                "role_zh": "已有图关系",
+                "status_zh": "可能需要历史化或刷新",
+                "text_zh": "Jon --表演偏好--> contemporary dance。",
+                "evidence_note_zh": "旧关系来自 evidence:old；图不是证明。",
+            },
         ),
     ]
     write_jsonl(package_dir / "review_queue" / "incremental_review_queue.jsonl", queue)
@@ -350,40 +425,43 @@ def seed_graph_inputs(package_dir: Path) -> dict[str, str]:
 def write_human_review_instructions(package_dir: Path, *, host: str, port: int) -> str:
     queue = package_dir / "review_queue" / "incremental_review_queue.jsonl"
     review_dir = package_dir / "human_review"
-    text = f"""# v0.4 Full Review Workflow Package
+    text = f"""# v0.4 增量人工审核包
 
-## Step 1: start review WebUI
+## 第一步：启动审核 WebUI
 
 ```powershell
 python -m tools.maintenance.incremental_review_webui --review-queue-jsonl "{queue}" --output-dir "{review_dir}" --host {host} --port {port}
 ```
 
-Open:
+打开：
 
 ```text
 http://{host}:{port}
 ```
 
-Review all items, then click the final submit button for the review session.
+逐条审核 S1 / S2 / graph 项目。页面会优先显示中文说明，但内部机器字段仍然保留在队列中，供后续 apply/finalize 使用。
 
-## Step 2: finalize package after review
-
-```powershell
-python -m tools.maintenance.v04_full_review_workflow_package_runner finalize --workspace "{package_dir.parent}" --package-dir "{package_dir}"
-```
-
-The finalize stage requires:
+审核完成后，点击页面右上方“提交本轮审核”。这一步只写：
 
 ```text
 human_review/review_decisions.jsonl
 human_review/review_session_manifest.json
 ```
 
-It then runs apply-plan generation, S1 publish, S2 publish, graph current
-publish, dependency/invalidation, and affected-neighborhood visual review.
+## 第二步：审核后 finalize
 
-Boundary: review decisions are required; this package does not auto-approve in
-normal mode.
+```powershell
+python -m tools.maintenance.v04_full_review_workflow_package_runner finalize --workspace "{package_dir.parent}" --package-dir "{package_dir}"
+```
+
+finalize 会读取人工审核结果，然后生成 apply plan，并发布 S1 current view、S2 current view、graph current、dependency/invalidation 和增量可视化。
+
+边界：
+
+- 人工审核是必须 gate；普通模式不会自动批准。
+- current view 不是 durable memory truth。
+- graph current 不是 graph truth。
+- graph_is_not_proof=true 仍然成立。
 """
     path = package_dir / "HUMAN_REVIEW_INSTRUCTIONS.md"
     write_text(path, text)

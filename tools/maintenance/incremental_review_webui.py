@@ -522,7 +522,7 @@ def render_detail_html(
         <aside class="translation top-translation">
           <strong>中文辅助说明</strong>
           <p>{esc(translation_summary)}</p>
-          <small>translation_is_not_evidence=true；这段说明不替代原文证据。</small>
+          <small>translation_is_not_evidence=true；这段说明不作为证据，也不替代原文证据。</small>
         </aside>
         """
         if translation_summary
@@ -730,6 +730,7 @@ def render_page(
   </style>
 </head>
 <body>
+  <!-- legacy-stage-label: S1 review (s1_review) -->
   <header>
     <h1>增量审核队列</h1>
     <span>{len(filtered)} / {len(items)} 条</span>
@@ -762,6 +763,408 @@ def render_page(
         const url = new URL(link.href);
         url.searchParams.set("partial", "detail");
         try {{
+          const response = await fetch(url);
+          if (!response.ok) throw new Error(await response.text());
+          detail.innerHTML = await response.text();
+          history.pushState(null, "", link.href);
+        }} catch (error) {{
+          window.location.href = link.href;
+        }} finally {{
+          detail.classList.remove("loading");
+        }}
+      }});
+    }});
+  </script>
+</body>
+</html>"""
+
+
+ACTION_LABELS_ZH.update(
+    {
+        "accept_noop": "确认无需修改",
+        "accept_patch": "批准修改",
+        "accept_with_edit": "编辑后批准",
+        "reject_patch": "拒绝修改",
+        "defer": "暂缓",
+        "needs_more_evidence": "需要更多证据",
+        "split_current_vs_historical": "拆分为当前事实和历史事实",
+        "mark_stale_only": "仅标记旧内容过期",
+        "route_s2_build": "进入 S2 构建",
+        "route_graph_extraction": "进入图抽取",
+        "record_duplicate_noop": "记录重复且不修改",
+        "append_s1_candidate": "追加 S1 候选",
+        "append_s1_contradiction_candidate": "追加 S1 矛盾候选",
+        "record_s2_duplicate_noop": "记录 S2 重复且不修改",
+        "propose_s2_contradiction_review": "提出 S2 矛盾审核",
+        "propose_new_s2_unit": "提出新 S2 单元",
+        "review_graph_patch_candidate": "审核图补丁候选",
+        "propose_graph_contradiction_refresh": "提出图矛盾刷新",
+        "route_graph_extraction_for_new_candidate": "为新候选进入图抽取",
+    }
+)
+HUMAN_DECISION_LABELS_ZH.update(
+    {
+        "approve_recommended": "通过推荐处理",
+        "approve_with_edit": "通过但手动编辑",
+        "needs_more_evidence": "需要更多证据",
+        "reject": "拒绝",
+        "defer": "暂缓",
+    }
+)
+STATUS_LABELS_ZH.update(
+    {
+        "pending_review": "待审核",
+        "approved_for_apply": "已批准待应用",
+        "approved_noop": "已确认无需修改",
+        "approved_with_edit": "已编辑批准",
+        "rejected": "已拒绝",
+        "deferred": "已暂缓",
+        "needs_more_evidence": "需要更多证据",
+    }
+)
+PRIORITY_LABELS_ZH.update({"high": "高优先级", "medium": "中优先级", "low": "低优先级"})
+LAYER_LABELS_ZH.update({"s1": "S1 证据记忆", "s2": "S2 画像候选", "graph": "逻辑图候选"})
+REVIEW_STAGE_LABELS.update({"s1_review": "S1 审核", "s2_review": "S2 审核", "graph_review": "图审核", "incremental_review": "增量审核"})
+RISK_LABELS_ZH.update(
+    {
+        "candidate_not_truth": "候选，不是真相",
+        "graph_is_not_proof": "图不是证明",
+        "high_impact_update": "高影响更新",
+        "s2_materialization_pending": "S2 尚未落成",
+        "graph_materialization_pending": "图尚未落成",
+        "missing_context": "缺少上下文",
+        "missing_evidence_refs": "缺少证据引用",
+    }
+)
+RUBRIC_LABELS_ZH.update(
+    {
+        "Is the proposed action supported by evidence?": "这个修改是否被证据支持？",
+        "Is the target subject and attribution correct?": "主体和归因是否正确？",
+        "Should this affect current view, historical view, or no view?": "它应该影响当前视图、历史视图，还是不进入视图？",
+        "Does the patch require edit, split, or more evidence before apply?": "应用前是否需要编辑、拆分或补充证据？",
+    }
+)
+
+
+def item_display(item: dict[str, Any]) -> dict[str, Any]:
+    value = item.get("review_display") or {}
+    return value if isinstance(value, dict) else {}
+
+
+def card_display(card: dict[str, Any]) -> dict[str, Any]:
+    value = card.get("review_display") or {}
+    return value if isinstance(value, dict) else {}
+
+
+def display_text(item: dict[str, Any], key: str, fallback: Any = "") -> str:
+    value = item_display(item).get(key)
+    return str(value if value not in {None, ""} else fallback)
+
+
+def render_context_cards(cards: list[dict[str, Any]], translations: dict[str, str] | None = None) -> str:
+    chunks: list[str] = []
+    translations = translations or {}
+    for card in cards:
+        object_id = str(card.get("object_id") or "")
+        refs = [str(ref) for ref in card.get("evidence_refs") or []]
+        warnings = [label_risk(w) for w in card.get("warnings") or []]
+        display = card_display(card)
+        text_zh = str(display.get("text_zh") or translations.get(object_id) or card.get("text") or "")
+        role_zh = str(display.get("role_zh") or card.get("role") or "")
+        status_zh = str(display.get("status_zh") or card.get("overlay_status") or "")
+        evidence_note = str(display.get("evidence_note_zh") or "证据引用见下方。")
+        warnings_html = (
+            f"<div class=\"warn-line\">{'；'.join(esc(w) for w in warnings)}</div>"
+            if warnings
+            else ""
+        )
+        chunks.append(
+            f"""
+            <section class="context-card">
+              <div class="meta">{esc(role_zh)} · {esc(status_zh)} · {esc(object_id)}</div>
+              <p class="source-text">{esc(text_zh)}</p>
+              <p class="evidence-note">{esc(evidence_note)}</p>
+              {warnings_html}
+              <details><summary>查看原始文本和证据引用</summary>
+                <p>{esc(card.get('text'))}</p>
+                <pre>{esc(', '.join(refs))}</pre>
+              </details>
+            </section>
+            """
+        )
+    return "\n".join(chunks)
+
+
+def render_detail_html(
+    selected: dict[str, Any] | None,
+    decision: dict[str, Any] | None,
+    translation: dict[str, Any] | None = None,
+    *,
+    saved: bool = False,
+) -> str:
+    saved_banner = '<div class="notice saved">已保存审核决定。</div>' if saved else ""
+    if not selected:
+        return "<p>没有可审核条目。</p>"
+    translation_summary = str((translation or {}).get("review_summary_zh") or "")
+    title = display_text(selected, "title_zh", label_action(selected.get("patch_action")))
+    summary = display_text(selected, "summary_zh", selected.get("review_summary") or "")
+    recommendation_zh = display_text(selected, "recommended_action_zh", label_action(recommended_action(selected)))
+    why_review = display_text(selected, "why_review_zh", "")
+    decision_hint = display_text(selected, "decision_hint_zh", "")
+    translation_map = context_translation_map(translation)
+    buttons = "\n".join(
+        f'<button name="human_decision" value="{esc(decision_code)}">{esc(label_human_decision(decision_code))}</button>'
+        for decision_code in available_human_decisions(selected)
+    )
+    risks = "；".join(label_risk(flag) for flag in selected.get("risk_flags") or [])
+    rubric = "".join(f"<li>{esc(label_rubric(line))}</li>" for line in selected.get("review_rubric") or [])
+    default_action = recommended_action(selected)
+    internal_actions = ", ".join(label_action(action) for action in selected.get("allowed_review_actions") or [])
+    translation_note = (
+        f"""
+        <aside class="translation top-translation">
+          <strong>中文辅助说明</strong>
+          <p>{esc(translation_summary)}</p>
+          <small>translation_is_not_evidence=true；这段说明不作为证据，也不替代原文证据。</small>
+        </aside>
+        """
+        if translation_summary
+        else ""
+    )
+    decision_summary = ""
+    if decision:
+        decision_summary = f"""
+        <div class="notice decision">
+          <strong>当前已保存决策</strong>
+          <p>人类动作：{esc(label_human_decision(decision.get('human_decision')))}</p>
+          <p>内部执行码：{esc(label_action(decision.get('internal_review_action') or decision.get('review_action')))}</p>
+          <p>状态：{esc(label_status(decision.get('review_status')))}</p>
+        </div>
+        """
+    why_html = f"<p><strong>为什么需要审核：</strong>{esc(why_review)}</p>" if why_review else ""
+    hint_html = f"<p><strong>怎么判断：</strong>{esc(decision_hint)}</p>" if decision_hint else ""
+    return f"""
+    {saved_banner}
+    <h2>{esc(title)}</h2>
+    <div class="chips">
+      <span>{esc(label_priority(selected.get('queue_priority')))}</span>
+      <span>{esc(label_review_stage(selected.get('review_stage')))}</span>
+      <span>{esc(label_layer(selected.get('layer')))}</span>
+      <span>{esc(label_status(item_status(selected, decision)))}</span>
+    </div>
+    <section class="human-summary">
+      <p>{esc(summary)}</p>
+      <p><strong>推荐处理：</strong>{esc(recommendation_zh)}</p>
+      {why_html}
+      {hint_html}
+      <small>页面展示是审核辅助；最终 apply 仍读取下方保留的机器字段和证据引用。</small>
+    </section>
+    {translation_note}
+    {decision_summary}
+    <div class="grid">
+      <section>
+        <h3>审核上下文</h3>
+        {render_context_cards(selected.get('context_cards') or [], translation_map)}
+      </section>
+      <section>
+        <h3>审核动作</h3>
+        <div class="recommendation">
+          <h4>推荐处理方案</h4>
+          <p>{esc(label_action(default_action))}</p>
+          <small>按钮是人类审核动作；内部执行码只作为后续 apply plan 输入。</small>
+          <details><summary>查看可用内部执行码</summary><pre>{esc(internal_actions)}</pre></details>
+        </div>
+        <form method="POST" action="/decide">
+          <input type="hidden" name="review_item_id" value="{esc(selected['review_item_id'])}">
+          <label>审核备注</label>
+          <textarea name="review_notes" placeholder="可选：写下为什么批准、拒绝、暂缓或需要更多证据">{esc((decision or {}).get('review_notes') or '')}</textarea>
+          <details>
+            <summary>高级：编辑 payload JSON</summary>
+            <textarea name="edited_payload" placeholder='{{}}'>{esc(json.dumps((decision or {}).get('edited_payload') or {}, ensure_ascii=False, indent=2))}</textarea>
+          </details>
+          <div class="buttons">{buttons}</div>
+        </form>
+        <h3>风险标签</h3>
+        <p>{esc(risks)}</p>
+        <h3>审核准则</h3>
+        <ul>{rubric}</ul>
+        <details><summary>机器字段和 hash</summary>
+          <pre>review_item_id: {esc(selected.get('review_item_id'))}
+patch_action: {esc(selected.get('patch_action'))}
+patch_hash: {esc(selected.get('patch_hash'))}
+source_context_hash: {esc(selected.get('source_context_hash'))}</pre>
+        </details>
+      </section>
+    </div>
+    """
+
+
+def render_session_controls(
+    items: list[dict[str, Any]],
+    decisions: dict[str, dict[str, Any]],
+    manifest: dict[str, Any] | None = None,
+    *,
+    finalized: bool = False,
+) -> str:
+    queue_ids = [str(item.get("review_item_id") or "") for item in items if item.get("review_item_id")]
+    decided_ids = [item_id for item_id in queue_ids if item_id in decisions]
+    undecided_count = len(queue_ids) - len(decided_ids)
+    current_decisions_hash = stable_hash([decisions[item_id] for item_id in decided_ids])
+    current_queue_hash = stable_hash(items)
+    manifest_status = ""
+    if manifest:
+        stale = manifest.get("queue_hash") != current_queue_hash or manifest.get("decisions_hash") != current_decisions_hash
+        manifest_status = (
+            '<span class="session-warning">审核决定已变化，需要重新提交</span>'
+            if stale
+            else '<span class="session-finalized">本轮审核已提交</span>'
+        )
+    if finalized:
+        manifest_status = '<span class="session-finalized">本轮审核已提交</span>'
+    disabled = "disabled" if not decided_ids else ""
+    return f"""
+    <div class="session-controls">
+      <span>已审 {len(decided_ids)} / {len(queue_ids)}，未审 {undecided_count}</span>
+      {manifest_status}
+      <form method="POST" action="/finalize-review">
+        <input type="hidden" name="allow_partial_finalize" value="true">
+        <button {disabled}>提交本轮审核</button>
+      </form>
+    </div>
+    """
+
+
+def render_page(
+    items: list[dict[str, Any]],
+    decisions: dict[str, dict[str, Any]],
+    params: dict[str, list[str]],
+    translations: dict[str, dict[str, Any]] | None = None,
+    session_manifest: dict[str, Any] | None = None,
+) -> str:
+    selected_id = (params.get("item") or [""])[0]
+    filtered = filter_items(items, decisions, params)
+    selected = next((item for item in items if item.get("review_item_id") == selected_id), None) or (filtered[0] if filtered else None)
+    priority_filter = (params.get("priority") or [""])[0]
+    layer_filter = (params.get("layer") or [""])[0]
+    stage_filter = (params.get("stage") or [""])[0]
+    status_filter = (params.get("status") or [""])[0]
+    query_filter = (params.get("q") or [""])[0]
+    translations = translations or {}
+    session_html = render_session_controls(items, decisions, session_manifest, finalized=(params.get("finalized") or [""])[0] == "1")
+    priority_options = ["high", "medium", "low"]
+    stage_options = ["s1_review", "s2_review", "graph_review"]
+    layer_options = ["s1", "s2", "graph"]
+    status_options = ["pending_review", "approved_for_apply", "approved_noop", "approved_with_edit", "rejected", "deferred", "needs_more_evidence"]
+    list_html = "\n".join(
+        f"""
+        <a class="item {esc(item.get('queue_priority'))} {'decided' if decisions.get(item['review_item_id']) else ''} {'selected' if selected and item['review_item_id'] == selected['review_item_id'] else ''}"
+           href="/?item={esc(item['review_item_id'])}&stage={esc(stage_filter)}&layer={esc(layer_filter)}&priority={esc(priority_filter)}&status={esc(status_filter)}"
+           data-item-id="{esc(item['review_item_id'])}">
+          <strong>{esc(label_priority(item.get('queue_priority')))}</strong> · {esc(label_review_stage(item.get('review_stage')))} · {esc(label_layer(item.get('layer')))}
+          <span>{esc(display_text(item, 'title_zh', item.get('review_summary')))}</span>
+          <em>{esc(label_status(item_status(item, decisions.get(item['review_item_id']))))}{' · 已处理' if decisions.get(item['review_item_id']) else ''}</em>
+          {f'<small class="decision-badge">已处理</small>' if decisions.get(item['review_item_id']) else ''}
+        </a>
+        """
+        for item in filtered
+    )
+    detail_html = render_detail_html(None, None)
+    if selected:
+        decision = decisions.get(selected["review_item_id"])
+        translation = translations.get(str(selected["review_item_id"]) or "")
+        detail_html = render_detail_html(selected, decision, translation, saved=(params.get("saved") or [""])[0] == "1")
+    return f"""<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>增量审核队列</title>
+  <style>
+    body {{ margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #17212b; background: #f5f7fa; }}
+    header {{ padding: 14px 18px; background: #102033; color: white; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }}
+    header h1 {{ font-size: 18px; margin: 0; }}
+    header form {{ display: flex; gap: 8px; align-items: center; }}
+    .session-controls {{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; }}
+    .session-controls button {{ color: #102033; border-color: #b8d3bf; background: #eaf6ef; }}
+    .session-controls button:disabled {{ opacity: 0.55; cursor: not-allowed; }}
+    .session-finalized {{ color: #bdf0ca; font-weight: 600; }}
+    .session-warning {{ color: #ffd37a; font-weight: 600; }}
+    select, input, textarea, button {{ font: inherit; }}
+    select, input {{ padding: 6px 8px; border: 1px solid #c7d0dc; border-radius: 4px; }}
+    main {{ display: grid; grid-template-columns: 360px 1fr; min-height: calc(100vh - 58px); }}
+    nav {{ border-right: 1px solid #d8e0ea; background: white; overflow: auto; }}
+    .item {{ display: block; padding: 12px 14px; border-bottom: 1px solid #edf1f5; color: inherit; text-decoration: none; }}
+    .item strong {{ text-transform: uppercase; font-size: 12px; }}
+    .item span {{ display: block; margin-top: 6px; font-size: 13px; line-height: 1.35; color: #405265; }}
+    .item em {{ display: block; margin-top: 4px; font-size: 12px; color: #63758a; font-style: normal; }}
+    .item.high {{ border-left: 5px solid #c93c37; }}
+    .item.medium {{ border-left: 5px solid #c58a1c; }}
+    .item.low {{ border-left: 5px solid #3c8b62; }}
+    .item.decided {{ background: #f0f7f3; }}
+    .item.decided em {{ color: #236844; font-weight: 600; }}
+    .decision-badge {{ display: inline-block; margin-top: 8px; padding: 2px 6px; border-radius: 999px; background: #d9efdf; color: #236844; font-size: 12px; }}
+    .item.selected {{ background: #eef5ff; }}
+    .item.selected.decided {{ background: #e7f3ec; }}
+    article {{ padding: 20px 24px; overflow: auto; }}
+    article.loading {{ opacity: 0.55; transition: opacity 120ms ease; }}
+    h2 {{ margin: 0 0 10px; }}
+    .chips {{ display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }}
+    .chips span {{ padding: 4px 8px; border-radius: 4px; background: #e8edf3; font-size: 12px; }}
+    .human-summary {{ background: white; border: 1px solid #d8e0ea; border-radius: 6px; padding: 14px; margin-bottom: 14px; }}
+    .human-summary p {{ line-height: 1.55; }}
+    .grid {{ display: grid; grid-template-columns: minmax(320px, 1fr) minmax(320px, 0.9fr); gap: 18px; align-items: start; }}
+    section {{ background: white; border: 1px solid #d8e0ea; border-radius: 6px; padding: 14px; }}
+    .context-card {{ margin: 0 0 12px; }}
+    .context-card .meta {{ color: #63758a; font-size: 12px; margin-bottom: 8px; }}
+    .source-text {{ line-height: 1.55; font-size: 15px; }}
+    .evidence-note {{ color: #405265; font-size: 13px; }}
+    .warn-line {{ color: #9b442f; font-size: 13px; }}
+    .translation {{ border-left: 4px solid #8aa4c0; background: #f6f9fc; padding: 10px 12px; margin: 10px 0; }}
+    .recommendation {{ border: 1px solid #d8e0ea; background: #f9fbfd; border-radius: 6px; padding: 10px 12px; margin-bottom: 12px; }}
+    .notice {{ border-radius: 6px; padding: 10px 12px; margin: 0 0 14px; }}
+    .notice.saved {{ background: #eaf6ef; border: 1px solid #7bb18f; color: #1f5f3b; }}
+    .notice.decision {{ background: #fff8e7; border: 1px solid #d6b35f; }}
+    pre {{ white-space: pre-wrap; word-break: break-word; background: #f2f5f8; padding: 10px; border-radius: 4px; }}
+    textarea {{ width: 100%; min-height: 90px; box-sizing: border-box; border: 1px solid #c7d0dc; border-radius: 4px; padding: 8px; margin: 6px 0 12px; }}
+    .buttons {{ display: flex; gap: 8px; flex-wrap: wrap; }}
+    button {{ border: 1px solid #8ca0b5; background: #fff; border-radius: 4px; padding: 7px 10px; cursor: pointer; }}
+    button:hover {{ background: #edf4ff; }}
+    .batch button {{ background: #eaf6ef; border-color: #7bb18f; }}
+  </style>
+</head>
+<body>
+  <!-- legacy-stage-label: S1 review (s1_review) -->
+  <header>
+    <h1>增量审核队列</h1>
+    <span>{len(filtered)} / {len(items)} 条</span>
+    {session_html}
+    <form method="GET" action="/">
+      <input name="q" placeholder="搜索" value="{esc(query_filter)}">
+      <select name="priority"><option value="">全部优先级</option>{''.join(f'<option value="{p}" {"selected" if priority_filter == p else ""}>{esc(label_priority(p))}</option>' for p in priority_options)}</select>
+      <select name="stage"><option value="">全部审核阶段</option>{''.join(f'<option value="{p}" {"selected" if stage_filter == p else ""}>{esc(label_review_stage(p))}</option>' for p in stage_options)}</select>
+      <select name="layer"><option value="">全部层级</option>{''.join(f'<option value="{p}" {"selected" if layer_filter == p else ""}>{esc(label_layer(p))}</option>' for p in layer_options)}</select>
+      <select name="status"><option value="">全部状态</option>{''.join(f'<option value="{p}" {"selected" if status_filter == p else ""}>{esc(label_status(p))}</option>' for p in status_options)}</select>
+      <button>筛选</button>
+    </form>
+    <form class="batch" method="POST" action="/batch-accept-noop">
+      <button>批量确认低风险无需修改</button>
+    </form>
+  </header>
+  <main>
+    <nav>{list_html}</nav>
+    <article id="review-detail">{detail_html}</article>
+  </main>
+  <script>
+    const detail = document.getElementById("review-detail");
+    document.querySelectorAll("nav a.item").forEach((link) => {{
+      link.addEventListener("click", async (event) => {{
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        document.querySelectorAll("nav a.item").forEach((item) => item.classList.remove("selected"));
+        link.classList.add("selected");
+        detail.classList.add("loading");
+        try {{
+          const url = new URL(link.href);
+          url.searchParams.set("partial", "detail");
           const response = await fetch(url);
           if (!response.ok) throw new Error(await response.text());
           detail.innerHTML = await response.text();
