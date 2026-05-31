@@ -348,6 +348,12 @@ def run_build_full(args: argparse.Namespace) -> dict[str, Any]:
         "--duplicate-policy",
         args.duplicate_policy,
     ]
+    if getattr(args, "api_mode", None):
+        common_prebuild.extend(["--api-mode", args.api_mode])
+    if getattr(args, "provider_profile", None):
+        common_prebuild.extend(["--provider-profile", args.provider_profile])
+    if getattr(args, "fallback_provider_profile", None):
+        common_prebuild.extend(["--fallback-provider-profile", args.fallback_provider_profile])
     if args.allow_live_api:
         common_prebuild.append("--allow-live-api")
     if args.max_items is not None:
@@ -462,6 +468,8 @@ def run_build_graph(args: argparse.Namespace) -> dict[str, Any]:
         provider=args.provider,
         api_mode=args.api_mode,
         allow_live_api=args.allow_live_api,
+        provider_profile=getattr(args, "provider_profile", None),
+        fallback_provider_profile=getattr(args, "fallback_provider_profile", None),
         route_decisions_path=construction_dir / "graph_route_decisions.jsonl",
         max_items=args.max_items,
         duplicate_policy=args.duplicate_policy,
@@ -665,6 +673,9 @@ def build_parser() -> argparse.ArgumentParser:
     build_full.add_argument("--s2-embedding-backend", default="hash", choices=["hash", "qwen_local"])
     build_full.add_argument("--pre-build-route-mode", default="route_and_propose", choices=["none", "route_only", "route_and_propose"])
     build_full.add_argument("--proposal-provider", default="mock", choices=["mock", "external_jsonl", "openai"])
+    build_full.add_argument("--api-mode", default=None, choices=["responses", "chat_completions"])
+    build_full.add_argument("--provider-profile", default=None)
+    build_full.add_argument("--fallback-provider-profile", default=None)
     build_full.add_argument("--allow-live-api", action="store_true")
     build_full.add_argument("--max-items", type=int, default=None)
     build_full.add_argument("--provider-concurrency", type=int, default=1)
@@ -678,6 +689,8 @@ def build_parser() -> argparse.ArgumentParser:
     build_graph.add_argument("--output-suffix", default=None)
     build_graph.add_argument("--provider", default="mock_regex_baseline", choices=["mock", "mock_regex_baseline", "external_jsonl", "openai"])
     build_graph.add_argument("--api-mode", default=None, choices=["responses", "chat_completions"])
+    build_graph.add_argument("--provider-profile", default=None)
+    build_graph.add_argument("--fallback-provider-profile", default=None)
     build_graph.add_argument("--allow-live-api", action="store_true")
     build_graph.add_argument("--max-items", type=int, default=None)
     build_graph.add_argument("--provider-concurrency", type=int, default=1)

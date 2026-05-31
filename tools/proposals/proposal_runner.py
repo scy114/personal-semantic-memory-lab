@@ -41,6 +41,13 @@ try:
 except ImportError:  # pragma: no cover - lcoral has python-dotenv, fallback keeps import safe.
     load_dotenv = None  # type: ignore[assignment]
 
+from tools.providers.provider_profiles import (
+    ProviderProfile,
+    ProviderProfileBundle,
+    resolve_provider_profile_bundle,
+    should_fallback_provider_error,
+)
+
 
 SUPPORTED_DUPLICATE_POLICIES = {"fail", "overwrite_generated"}
 SUPPORTED_PROVIDERS = {"mock", "mock_invalid", "openai", "external_jsonl"}
@@ -384,6 +391,10 @@ class ProviderResult:
     estimated_output_tokens: int
     cache_hit: bool | None
     latency_ms: int | None
+    provider_profile_id: str | None = None
+    fallback_used: bool = False
+    fallback_reason: str | None = None
+    fallback_from_profile_id: str | None = None
 
 
 @dataclass
@@ -413,6 +424,7 @@ class RunnerInputs:
     preprocessing_decisions_path: Path
     external_model_outputs_path: Path | None
     provider_concurrency: int
+    provider_profile_bundle: ProviderProfileBundle
 
 
 def validate_profile_schema(profile: dict[str, Any]) -> None:
@@ -713,19 +725,21 @@ class MockProvider(ModelProvider):
 
 
 class OpenAICompatibleProvider(ModelProvider):
-    def __init__(self, api_mode: str) -> None:
-        api_key = os.environ.get("OPENAI_API_KEY", "")
+    def __init__(self, api_mode: str, profile: ProviderProfile | None = None) -> None:
+        api_key = profile.api_key if profile else os.environ.get("OPENAI_API_KEY", "")
         if not api_key:
-            raise ValueError("OPENAI_API_KEY is required for provider=openai.")
+            profile_hint = f" for provider profile {profile.profile_id}" if profile else ""
+            raise ValueError(f"OPENAI_API_KEY or profile API key is required for provider=openai{profile_hint}.")
         if api_mode not in SUPPORTED_API_MODES:
             raise ValueError(f"Unsupported OpenAI-compatible api_mode: {api_mode}")
+        self.profile = profile
         self.api_key = api_key
         self.api_mode = api_mode
-        self.base_url = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
-        self.user_agent = os.environ.get("OPENAI_USER_AGENT", "curl/8.19.0")
-        self.max_retries = int(os.environ.get("OPENAI_MAX_RETRIES", "2"))
-        self.retry_base_seconds = float(os.environ.get("OPENAI_RETRY_BASE_SECONDS", "1.0"))
-        self.retry_max_seconds = float(os.environ.get("OPENAI_RETRY_MAX_SECONDS", "12.0"))
+        self.base_url = (profile.base_url if profile else os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")).rstrip("/")
+        self.user_agent = profile.user_agent if profile else os.environ.get("OPENAI_USER_AGENT", "curl/8.19.0")
+        self.max_retries = profile.max_retries if profile else int(os.environ.get("OPENAI_MAX_RETRIES", "2"))
+        self.retry_base_seconds = profile.retry_base_seconds if profile else float(os.environ.get("OPENAI_RETRY_BASE_SECONDS", "1.0"))
+        self.retry_max_seconds = profile.retry_max_seconds if profile else float(os.environ.get("OPENAI_RETRY_MAX_SECONDS", "12.0"))
 
     def generate(self, *, prompt: PromptPolicy, model_id: str, input_packet: dict[str, Any]) -> ProviderResult:
         started = time.perf_counter()
@@ -829,6 +843,7 @@ class OpenAICompatibleProvider(ModelProvider):
             estimated_output_tokens=int(usage.get("output_tokens") or estimate_tokens(output_text)),
             cache_hit=None,
             latency_ms=int((time.perf_counter() - started) * 1000),
+            provider_profile_id=self.profile.profile_id if self.profile else None,
         )
 
     def _generate_chat_completions(
@@ -871,6 +886,7 @@ class OpenAICompatibleProvider(ModelProvider):
             estimated_output_tokens=int(usage.get("completion_tokens") or usage.get("output_tokens") or estimate_tokens(output_text)),
             cache_hit=None,
             latency_ms=int((time.perf_counter() - started) * 1000),
+            provider_profile_id=self.profile.profile_id if self.profile else None,
         )
 
 
@@ -923,13 +939,70 @@ class ExternalJsonlProvider(ModelProvider):
         )
 
 
-def build_provider(provider_name: str, api_mode: str, external_outputs_path: Path | None = None) -> ModelProvider:
+class FallbackModelProvider(ModelProvider):
+    """Provider-level fallback only.
+
+    This catches transport/rate/model-availability failures from the primary
+    provider. It intentionally does not catch schema, quote, or evidence
+    validation failures because those are model-output quality problems.
+    """
+
+    def __init__(
+        self,
+        primary: ModelProvider,
+        fallback: ModelProvider,
+        bundle: ProviderProfileBundle,
+    ) -> None:
+        self.primary = primary
+        self.fallback = fallback
+        self.bundle = bundle
+
+    def _fallback_model_id(self, model_id: str) -> str:
+        fallback_profile = self.bundle.fallback
+        if fallback_profile is None:
+            return model_id
+        if model_id == self.bundle.strong_model:
+            return fallback_profile.strong_model or model_id
+        if model_id == self.bundle.weak_model:
+            return fallback_profile.weak_model or model_id
+        return fallback_profile.weak_model or fallback_profile.strong_model or model_id
+
+    def generate(self, *, prompt: PromptPolicy, model_id: str, input_packet: dict[str, Any]) -> ProviderResult:
+        try:
+            return self.primary.generate(prompt=prompt, model_id=model_id, input_packet=input_packet)
+        except Exception as exc:
+            if not self.bundle.fallback_enabled or not should_fallback_provider_error(exc):
+                raise
+            fallback_model_id = self._fallback_model_id(model_id)
+            result = self.fallback.generate(prompt=prompt, model_id=fallback_model_id, input_packet=input_packet)
+            result.fallback_used = True
+            result.fallback_reason = f"{type(exc).__name__}: provider/service failure"
+            result.fallback_from_profile_id = self.bundle.primary_profile_id
+            return result
+
+
+def build_provider(
+    provider_name: str,
+    api_mode: str,
+    external_outputs_path: Path | None = None,
+    provider_profile_bundle: ProviderProfileBundle | None = None,
+) -> ModelProvider:
     if provider_name == "mock":
         return MockProvider()
     if provider_name == "mock_invalid":
         return MockProvider(invalid=True)
     if provider_name == "openai":
-        return OpenAICompatibleProvider(api_mode)
+        bundle = provider_profile_bundle or resolve_provider_profile_bundle(
+            provider=provider_name,
+            api_mode=api_mode,
+            weak_model=None,
+            strong_model=None,
+        )
+        primary = OpenAICompatibleProvider(bundle.api_mode, bundle.primary)
+        if not bundle.fallback_enabled or bundle.fallback is None:
+            return primary
+        fallback = OpenAICompatibleProvider(bundle.fallback.api_mode, bundle.fallback)
+        return FallbackModelProvider(primary, fallback, bundle)
     if provider_name == "external_jsonl":
         if external_outputs_path is None:
             raise ValueError("provider=external_jsonl requires --external-model-outputs")
@@ -971,7 +1044,15 @@ def load_inputs(args: argparse.Namespace) -> RunnerInputs:
     provider = args.provider or os.environ.get("OPENAI_PROVIDER") or "openai"
     if provider not in SUPPORTED_PROVIDERS:
         raise ValueError(f"Unsupported provider: {provider}")
-    api_mode = getattr(args, "api_mode", None) or os.environ.get("OPENAI_API_MODE") or "responses"
+    provider_profile_bundle = resolve_provider_profile_bundle(
+        provider=provider,
+        api_mode=getattr(args, "api_mode", None),
+        weak_model=getattr(args, "weak_model", None),
+        strong_model=getattr(args, "strong_model", None),
+        provider_profile=getattr(args, "provider_profile", None),
+        fallback_provider_profile=getattr(args, "fallback_provider_profile", None),
+    )
+    api_mode = provider_profile_bundle.api_mode
     if api_mode not in SUPPORTED_API_MODES:
         raise ValueError(f"Unsupported api_mode: {api_mode}")
     live_api_enabled, live_api_unlock_source = resolve_live_api(provider, bool(args.allow_live_api))
@@ -981,8 +1062,8 @@ def load_inputs(args: argparse.Namespace) -> RunnerInputs:
     if getattr(args, "external_model_outputs", None):
         external_model_outputs_path = resolve_project_path(project_root, args.external_model_outputs)
         ensure_within(external_model_outputs_path, [workspace, project_root])
-    weak_model = args.weak_model or os.environ.get("OPENAI_MODEL_WEAK") or "mock-weak-model"
-    strong_model = args.strong_model or os.environ.get("OPENAI_MODEL_STRONG") or "mock-strong-model"
+    weak_model = provider_profile_bundle.weak_model
+    strong_model = provider_profile_bundle.strong_model
     proposal_run_id = args.run_id or f"{profile.target_task}-proposal:{workspace.name}:{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}"
     weak_prompt_profile = profile.prompt_policies["weak"]
     strong_prompt_profile = profile.prompt_policies["strong"]
@@ -1012,6 +1093,7 @@ def load_inputs(args: argparse.Namespace) -> RunnerInputs:
         preprocessing_decisions_path=workspace / "memory" / "preprocessing_decisions.jsonl",
         external_model_outputs_path=external_model_outputs_path,
         provider_concurrency=max(1, int(getattr(args, "provider_concurrency", 1) or 1)),
+        provider_profile_bundle=provider_profile_bundle,
     )
 
 
@@ -1699,6 +1781,10 @@ def base_proposal_row(
         "override_reason": packet.get("route_override_reason"),
         "model_id": model_id,
         "provider": provider,
+        "provider_profile_id": None,
+        "fallback_used": False,
+        "fallback_reason": None,
+        "fallback_from_profile_id": None,
         "prompt_policy_id": prompt.policy_id if prompt else None,
         "prompt_hash": prompt.prompt_hash if prompt else None,
         "output_kind": "skipped",
@@ -1855,6 +1941,10 @@ def proposal_from_model_payload(
     payload: dict[str, Any],
 ) -> dict[str, Any]:
     row = base_proposal_row(inputs, packet, route_used, result.model_id, result.provider, prompt)
+    row["provider_profile_id"] = result.provider_profile_id
+    row["fallback_used"] = result.fallback_used
+    row["fallback_reason"] = result.fallback_reason
+    row["fallback_from_profile_id"] = result.fallback_from_profile_id
     if profile_is_s1_memory_candidate(inputs.profile):
         output_kind = str(payload["output_kind"])
         source_text_quote = str(payload.get("source_text_quote") or "")[: inputs.profile.max_quote_chars]
@@ -2059,6 +2149,10 @@ def failure_row(
         row["estimated_output_tokens"] = result.estimated_output_tokens
         row["cache_hit"] = result.cache_hit
         row["latency_ms"] = result.latency_ms
+        row["provider_profile_id"] = result.provider_profile_id
+        row["fallback_used"] = result.fallback_used
+        row["fallback_reason"] = result.fallback_reason
+        row["fallback_from_profile_id"] = result.fallback_from_profile_id
     return {
         **row,
         "raw_model_output": raw_output[:2000],
@@ -2074,6 +2168,9 @@ def model_call_input_row(inputs: RunnerInputs, packet: dict[str, Any], route_use
         "route_recommended": packet.get("route_recommended"),
         "route_used": route_used,
         "model_id": model_id,
+        "provider_profile_id": inputs.provider_profile_bundle.primary_profile_id,
+        "provider_fallback_profile_id": inputs.provider_profile_bundle.fallback_profile_id,
+        "provider_fallback_enabled": inputs.provider_profile_bundle.fallback_enabled,
         "prompt_policy_id": prompt.policy_id,
         "prompt_hash": prompt.prompt_hash,
         "prompt_text": prompt.text,
@@ -2157,7 +2254,12 @@ def process_packet(
 
 
 def process_packets(inputs: RunnerInputs, packets: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
-    provider = build_provider(inputs.provider, inputs.api_mode, inputs.external_model_outputs_path)
+    provider = build_provider(
+        inputs.provider,
+        inputs.api_mode,
+        inputs.external_model_outputs_path,
+        inputs.provider_profile_bundle,
+    )
     proposals: list[dict[str, Any]] = []
     human_queue: list[dict[str, Any]] = []
     failures: list[dict[str, Any]] = []
@@ -2329,6 +2431,7 @@ def build_manifest(
         "target_task": inputs.profile.target_task,
         "provider": inputs.provider,
         "api_mode": inputs.api_mode,
+        **inputs.provider_profile_bundle.manifest_fields(),
         "live_api_enabled": inputs.live_api_enabled,
         "live_api_unlock_source": inputs.live_api_unlock_source,
         "weak_model_id": inputs.weak_model,
@@ -2363,6 +2466,7 @@ def build_manifest(
             "human_review_queue_rows": len(human_queue),
             "model_output_failures": len(failures),
             "model_call_rows": len(model_call_rows),
+            "fallback_used_count": sum(1 for row in model_call_rows if row.get("fallback_used") is True),
             "model_call_inputs": len(model_call_inputs),
             "estimated_input_tokens": sum(int(row.get("estimated_input_tokens") or 0) for row in model_call_rows),
             "estimated_output_tokens": sum(int(row.get("estimated_output_tokens") or 0) for row in model_call_rows),
@@ -2415,6 +2519,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--run-id", default=None)
     parser.add_argument("--duplicate-policy", default="fail", choices=sorted(SUPPORTED_DUPLICATE_POLICIES))
     parser.add_argument("--provider", default=None, choices=sorted(SUPPORTED_PROVIDERS))
+    parser.add_argument("--provider-profile", default=None)
+    parser.add_argument("--fallback-provider-profile", default=None)
     parser.add_argument("--api-mode", default=None, choices=sorted(SUPPORTED_API_MODES))
     parser.add_argument("--allow-live-api", action="store_true")
     parser.add_argument("--weak-model", default=None)

@@ -32,6 +32,10 @@ from tools.proposals.proposal_runner import (
     load_dotenv,
     resolve_live_api,
 )
+from tools.providers.provider_profiles import (
+    ProviderProfileBundle,
+    resolve_provider_profile_bundle,
+)
 from tools.graph.graph_construction_packet_builder import (
     first_non_empty,
     read_json,
@@ -1572,6 +1576,8 @@ def build_graph_relation_candidates(
     allow_live_api: bool = False,
     weak_model: str | None = None,
     strong_model: str | None = None,
+    provider_profile: str | None = None,
+    fallback_provider_profile: str | None = None,
     profile_path: Path | str = DEFAULT_GRAPH_EXTRACTION_PROFILE,
     weak_prompt_path: str | None = None,
     strong_prompt_path: str | None = None,
@@ -1596,12 +1602,20 @@ def build_graph_relation_candidates(
     if provider not in SUPPORTED_PROVIDERS:
         raise ValueError(f"Unsupported provider: {provider}")
     provider_label = "mock_regex_baseline" if provider == "mock" else provider
-    api_mode = api_mode or os.environ.get("OPENAI_API_MODE") or "responses"
+    provider_profile_bundle: ProviderProfileBundle = resolve_provider_profile_bundle(
+        provider=provider,
+        api_mode=api_mode,
+        weak_model=weak_model,
+        strong_model=strong_model,
+        provider_profile=provider_profile,
+        fallback_provider_profile=fallback_provider_profile,
+    )
+    api_mode = provider_profile_bundle.api_mode
     if api_mode not in SUPPORTED_API_MODES:
         raise ValueError(f"Unsupported api_mode: {api_mode}")
     live_api_enabled, live_api_unlock_source = resolve_live_api(provider, bool(allow_live_api))
-    weak_model = weak_model or os.environ.get("OPENAI_MODEL_WEAK") or "gpt-5.4-mini"
-    strong_model = strong_model or os.environ.get("OPENAI_MODEL_STRONG") or "gpt-5.4"
+    weak_model = provider_profile_bundle.weak_model
+    strong_model = provider_profile_bundle.strong_model
     profile = load_graph_extraction_profile(project_root, profile_path)
     if weak_prompt_path:
         profile["prompt_policies"]["weak"]["path"] = weak_prompt_path
@@ -1633,7 +1647,12 @@ def build_graph_relation_candidates(
         if external_model_outputs_path is None:
             raise ValueError("external_jsonl provider requires external_model_outputs_path")
         external_payload_index = load_external_payload_index(external_model_outputs_path)
-    model_provider = build_provider(provider, api_mode, external_model_outputs_path) if provider == "openai" else None
+    model_provider = build_provider(
+        provider,
+        api_mode,
+        external_model_outputs_path,
+        provider_profile_bundle,
+    ) if provider == "openai" else None
     route_decisions = load_graph_route_decisions(route_decisions_path)
     relation_schema_candidate_index = load_relation_schema_candidate_index(relation_schema_candidates_path)
     provider_concurrency = max(1, int(provider_concurrency or 1))
@@ -1660,6 +1679,9 @@ def build_graph_relation_candidates(
             "model_id": model_id,
             "provider": provider_label,
             "api_mode": api_mode,
+            "provider_profile_id": provider_profile_bundle.primary_profile_id,
+            "provider_fallback_profile_id": provider_profile_bundle.fallback_profile_id,
+            "provider_fallback_enabled": provider_profile_bundle.fallback_enabled,
             "prompt_policy_id": prompt.policy_id,
             "prompt_hash": prompt.prompt_hash,
             "prompt_path": str(prompt.path),
@@ -1677,6 +1699,10 @@ def build_graph_relation_candidates(
                 "source_packet_id": str(packet.get("packet_id") or ""),
                 "model_id": result.model_id,
                 "provider": result.provider,
+                "provider_profile_id": result.provider_profile_id,
+                "fallback_used": result.fallback_used,
+                "fallback_reason": result.fallback_reason,
+                "fallback_from_profile_id": result.fallback_from_profile_id,
                 "prompt_policy_id": prompt.policy_id,
                 "prompt_hash": prompt.prompt_hash,
                 "estimated_input_tokens": result.estimated_input_tokens,
@@ -1911,6 +1937,7 @@ def build_graph_relation_candidates(
         "weak_prompt_hash": weak_prompt.prompt_hash,
         "strong_prompt_hash": strong_prompt.prompt_hash,
         "api_mode": api_mode,
+        **provider_profile_bundle.manifest_fields(),
         "provider_concurrency": provider_concurrency,
         "live_api_enabled": live_api_enabled,
         "live_api_unlock_source": live_api_unlock_source,
@@ -1928,6 +1955,7 @@ def build_graph_relation_candidates(
             "packets_without_candidates": packets_without_candidates,
             "model_call_inputs": len(model_call_inputs),
             "model_call_rows": len(model_call_result_rows),
+            "fallback_used_count": sum(1 for row in model_call_result_rows if row.get("fallback_used") is True),
             "estimated_input_tokens": sum(int(row.get("estimated_input_tokens") or 0) for row in model_call_result_rows),
             "estimated_output_tokens": sum(int(row.get("estimated_output_tokens") or 0) for row in model_call_result_rows),
             "lane_counts": dict(sorted(lane_counts.items())),
@@ -1985,6 +2013,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--input-packets", default=None)
     parser.add_argument("--output-dir", default=None)
     parser.add_argument("--provider", default="openai", choices=sorted(SUPPORTED_PROVIDERS))
+    parser.add_argument("--provider-profile", default=None)
+    parser.add_argument("--fallback-provider-profile", default=None)
     parser.add_argument("--api-mode", default=None, choices=sorted(SUPPORTED_API_MODES))
     parser.add_argument("--allow-live-api", action="store_true")
     parser.add_argument("--weak-model", default=None)
@@ -2024,6 +2054,8 @@ def main(argv: list[str] | None = None) -> int:
         allow_live_api=args.allow_live_api,
         weak_model=args.weak_model,
         strong_model=args.strong_model,
+        provider_profile=args.provider_profile,
+        fallback_provider_profile=args.fallback_provider_profile,
         profile_path=args.profile,
         weak_prompt_path=args.weak_prompt,
         strong_prompt_path=args.strong_prompt,

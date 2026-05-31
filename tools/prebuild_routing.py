@@ -36,7 +36,9 @@ class PreBuildRoutingOptions:
     route_policy: str
     proposal_profile: str
     proposal_provider: str
-    api_mode: str
+    api_mode: str | None
+    provider_profile: str | None
+    fallback_provider_profile: str | None
     allow_live_api: bool
     env_file: str | None
     external_model_outputs: str | None
@@ -77,7 +79,9 @@ def options_from_args(
         route_policy=str(get_arg(args, "route_policy", DEFAULT_ROUTE_POLICY) or DEFAULT_ROUTE_POLICY),
         proposal_profile=str(get_arg(args, "proposal_profile", default_profile) or default_profile),
         proposal_provider=provider,
-        api_mode=str(get_arg(args, "api_mode", None) or os.environ.get("OPENAI_API_MODE") or "responses"),
+        api_mode=get_arg(args, "api_mode", None),
+        provider_profile=get_arg(args, "provider_profile", None),
+        fallback_provider_profile=get_arg(args, "fallback_provider_profile", None),
         allow_live_api=bool(get_arg(args, "allow_live_api", False)),
         env_file=get_arg(args, "env_file", ".env"),
         external_model_outputs=get_arg(args, "external_model_outputs", None),
@@ -172,6 +176,14 @@ def load_runner_inputs(
         options.proposal_provider,
         options.allow_live_api,
     )
+    provider_profile_bundle = proposal_runner.resolve_provider_profile_bundle(
+        provider=options.proposal_provider,
+        api_mode=options.api_mode,
+        weak_model=None,
+        strong_model=None,
+        provider_profile=options.provider_profile,
+        fallback_provider_profile=options.fallback_provider_profile,
+    )
     weak_prompt_profile = profile.prompt_policies["weak"]
     strong_prompt_profile = profile.prompt_policies["strong"]
     return proposal_runner.RunnerInputs(
@@ -182,11 +194,11 @@ def load_runner_inputs(
         duplicate_policy=options.duplicate_policy,
         proposal_run_id=run_id,
         provider=options.proposal_provider,
-        api_mode=options.api_mode,
+        api_mode=provider_profile_bundle.api_mode,
         live_api_enabled=live_api_enabled,
         live_api_unlock_source=live_api_unlock_source,
-        weak_model=os.environ.get("OPENAI_MODEL_WEAK") or "mock-weak-model",
-        strong_model=os.environ.get("OPENAI_MODEL_STRONG") or "mock-strong-model",
+        weak_model=provider_profile_bundle.weak_model,
+        strong_model=provider_profile_bundle.strong_model,
         weak_prompt=proposal_runner.load_prompt(
             project_root,
             weak_prompt_profile["path"],
@@ -208,6 +220,7 @@ def load_runner_inputs(
         preprocessing_decisions_path=proposal_workspace / "memory" / "preprocessing_decisions.jsonl",
         external_model_outputs_path=resolve_path(project_root, options.external_model_outputs),
         provider_concurrency=options.provider_concurrency,
+        provider_profile_bundle=provider_profile_bundle,
     )
 
 
@@ -317,6 +330,8 @@ def add_prebuild_arguments(parser: argparse.ArgumentParser, *, default_profile: 
     parser.add_argument("--route-policy", default=DEFAULT_ROUTE_POLICY)
     parser.add_argument("--proposal-provider", default=DEFAULT_PROPOSAL_PROVIDER, choices=sorted(PRE_BUILD_PROVIDERS))
     parser.add_argument("--proposal-profile", default=default_profile)
+    parser.add_argument("--provider-profile", default=None)
+    parser.add_argument("--fallback-provider-profile", default=None)
     parser.add_argument("--api-mode", default=None)
     parser.add_argument("--allow-live-api", action="store_true")
     parser.add_argument("--env-file", default=".env")
