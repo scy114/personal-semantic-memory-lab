@@ -21,6 +21,7 @@ python -m tools.workflow_runner ...
 - graph build：construction packets -> route -> extraction baseline -> consolidation -> NetworkX -> profile/community -> final quality gate -> visual bundle；
 - query：lexical / embedding / graph 融合，自动发现 v0.3 graph dir；
 - incremental human review：真实 WebUI 人工审核 session -> finalize -> S1 current / S2 current / graph current / invalidation / incremental visual refresh；
+- bounded live provider smoke：S1/S2 和 graph LLM lane 均已用真实 provider 小批跑通；
 - full unittest：322 tests OK。
 
 验收报告：
@@ -29,10 +30,9 @@ python -m tools.workflow_runner ...
 docs/v0.41-release-acceptance-report.md
 ```
 
-仍然 gated：
+仍然 gated / 不自动执行：
 
-- bounded live provider smoke；
-- public mirror 同步；
+- public mirror push；
 - durable memory write；
 - graph truth；
 - S3 / support checker authority。
@@ -599,13 +599,9 @@ users/_v041_release_acceptance_mock_20260530/workflow_runs/
 
 下一步仍然要补的是：
 
-1. bounded live provider smoke
+1. public mirror push
 
-   单独跑小批真实 provider 验证，不在 CI 默认运行，不把 provider 输出放入 public mirror。
-
-2. public mirror 同步
-
-   把 v0.41 workflow runner、测试、精选文档同步到 public mirror，但继续排除：
+   v0.41 workflow runner、测试、精选文档已经本地同步到 public mirror；推送 GitHub 仍需单独显式授权。public mirror 继续排除：
 
    ```text
    users/
@@ -613,6 +609,10 @@ users/_v041_release_acceptance_mock_20260530/workflow_runs/
    provider outputs
    external downloads
    ```
+
+2. provider 配置定案
+
+   决定私有 `.env` 是否改为当前 provider 可用模型，或继续要求运行时显式覆盖。
 
 3. public-safe sample workspace
 

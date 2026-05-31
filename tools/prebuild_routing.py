@@ -77,7 +77,7 @@ def options_from_args(
         route_policy=str(get_arg(args, "route_policy", DEFAULT_ROUTE_POLICY) or DEFAULT_ROUTE_POLICY),
         proposal_profile=str(get_arg(args, "proposal_profile", default_profile) or default_profile),
         proposal_provider=provider,
-        api_mode=str(get_arg(args, "api_mode", "responses") or "responses"),
+        api_mode=str(get_arg(args, "api_mode", None) or os.environ.get("OPENAI_API_MODE") or "responses"),
         allow_live_api=bool(get_arg(args, "allow_live_api", False)),
         env_file=get_arg(args, "env_file", ".env"),
         external_model_outputs=get_arg(args, "external_model_outputs", None),
@@ -317,7 +317,7 @@ def add_prebuild_arguments(parser: argparse.ArgumentParser, *, default_profile: 
     parser.add_argument("--route-policy", default=DEFAULT_ROUTE_POLICY)
     parser.add_argument("--proposal-provider", default=DEFAULT_PROPOSAL_PROVIDER, choices=sorted(PRE_BUILD_PROVIDERS))
     parser.add_argument("--proposal-profile", default=default_profile)
-    parser.add_argument("--api-mode", default="responses")
+    parser.add_argument("--api-mode", default=None)
     parser.add_argument("--allow-live-api", action="store_true")
     parser.add_argument("--env-file", default=".env")
     parser.add_argument("--external-model-outputs", default=None)
