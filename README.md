@@ -119,15 +119,28 @@ quality proof or the main fidelity path.
 
 ## Provider Configuration
 
-The default provider mode is mock/replay-oriented. To use a real
-OpenAI-compatible provider, create a local `.env` from `.env.example` and set:
+The test and CI path remains mock/replay-oriented. Live provider runs require
+explicit configuration and `--allow-live-api`.
+
+The current recommended local live profile is the cheaper OpenAI-compatible
+Claude lane:
 
 ```text
 OPENAI_PROVIDER=openai
-OPENAI_API_KEY=...
-OPENAI_BASE_URL=https://api.openai.com/v1
 ALLOW_LIVE_API=true
+
+PSML_PROVIDER_DEFAULT=claude_secondary
+PSML_PROVIDER_FALLBACK=
+PSML_PROVIDER_CLAUDE_SECONDARY_API_KEY_ENV=CLAUDE_COMPAT_API_KEY
+PSML_PROVIDER_CLAUDE_SECONDARY_BASE_URL=<your-openai-compatible-base-url>
+PSML_PROVIDER_CLAUDE_SECONDARY_API_MODE=chat_completions
+PSML_PROVIDER_CLAUDE_SECONDARY_WEAK_MODEL=claude-haiku-4-5
+PSML_PROVIDER_CLAUDE_SECONDARY_STRONG_MODEL=claude-haiku-4-5
 ```
+
+`openai_primary` remains an optional fallback/profile placeholder. Provider
+fallback is only for provider/service failures, not schema, quote, evidence, or
+model-output quality failures.
 
 Do not commit `.env` files or provider outputs.
 

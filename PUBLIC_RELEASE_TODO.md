@@ -20,4 +20,5 @@
 - [x] Re-run public mirror tests after live-smoke sync.
 - [x] Re-run private/generated directory cleanup and secret grep after live-smoke sync.
 - [x] Commit v0.41 live-smoke public mirror update.
-- [ ] Push v0.41 public mirror update only after explicit approval.
+- [x] Push v0.41 public mirror update after explicit approval.
+- [x] Push provider-profile default update.
