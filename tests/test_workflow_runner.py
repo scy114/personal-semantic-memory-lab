@@ -5,11 +5,13 @@ import shutil
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from tools.graph.graph_construction_packet_builder import read_jsonl
 from tools.workflow_runner import (
     discover_workflow_graph_dir,
     discover_workflow_profile_dir,
+    run_doctor,
     run_build_graph,
     run_incremental,
     run_status,
@@ -154,6 +156,55 @@ def make_graph_workspace(root: Path) -> Path:
 
 
 class WorkflowRunnerTests(unittest.TestCase):
+    def test_provider_config_doctor_reports_default_profile_without_live_call(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            workspace = root / "doctor_workspace"
+            workspace.mkdir()
+            env_file = root / ".env"
+            env_file.write_text(
+                "\n".join(
+                    [
+                        "OPENAI_PROVIDER=openai",
+                        "ALLOW_LIVE_API=false",
+                        "PSML_PROVIDER_DEFAULT=claude_secondary",
+                        "PSML_PROVIDER_FALLBACK=",
+                        "PSML_PROVIDER_CLAUDE_SECONDARY_PROVIDER=openai",
+                        "PSML_PROVIDER_CLAUDE_SECONDARY_API_KEY_ENV=TEST_CLAUDE_COMPAT_KEY",
+                        "PSML_PROVIDER_CLAUDE_SECONDARY_BASE_URL=https://cheap-provider.example/v1",
+                        "PSML_PROVIDER_CLAUDE_SECONDARY_API_MODE=chat_completions",
+                        "PSML_PROVIDER_CLAUDE_SECONDARY_WEAK_MODEL=claude-haiku-4-5",
+                        "PSML_PROVIDER_CLAUDE_SECONDARY_STRONG_MODEL=claude-haiku-4-5",
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            with patch.dict(os.environ, {"TEST_CLAUDE_COMPAT_KEY": "secret-value"}, clear=False):
+                manifest = run_doctor(
+                    argparse.Namespace(
+                        project_root=str(root),
+                        workspace=str(workspace),
+                        env_file=str(env_file),
+                        run_id="doctor-test",
+                        provider=None,
+                        api_mode=None,
+                        provider_profile=None,
+                        fallback_provider_profile=None,
+                        allow_live_api=False,
+                    )
+                )
+
+            doctor = manifest["provider_config_doctor"]
+            self.assertEqual(doctor["diagnostic_status"], "pass")
+            self.assertEqual(doctor["profile_selection"]["provider_profile_id"], "claude_secondary")
+            self.assertEqual(doctor["profiles"]["primary"]["base_url_host"], "cheap-provider.example")
+            self.assertTrue(doctor["profiles"]["primary"]["api_key_present"])
+            self.assertFalse(doctor["live_api"]["doctor_performed_live_probe"])
+            self.assertNotIn("secret-value", json.dumps(manifest, ensure_ascii=False))
+            self.assertTrue(Path(manifest["outputs"]["workflow_report"]).exists())
+
     def test_status_identifies_empty_and_current_view_assets(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace = Path(temp_dir) / "status_workspace"

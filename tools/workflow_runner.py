@@ -10,11 +10,15 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
+import re
 import subprocess
 import sys
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 from tools.graph.graph_candidate_consolidator import consolidate_graph_candidates
 from tools.graph.graph_construction_packet_builder import build_graph_construction_packets
@@ -30,6 +34,7 @@ from tools.maintenance.v04_full_review_workflow_package_runner import (
     prepare_full_review_workflow_package,
 )
 from tools.maintenance.v04_incremental_workflow_smoke_runner import run_v04_incremental_workflow_smoke
+from tools.providers.provider_profiles import ProviderProfile, resolve_provider_profile_bundle
 
 
 SCHEMA_VERSION = "workflow.v041.manifest"
@@ -116,6 +121,120 @@ def safe_relative(path: Path, root: Path) -> str:
         return str(path.resolve().relative_to(root.resolve()))
     except ValueError:
         return str(path.resolve())
+
+
+def env_truthy(value: str | None) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def profile_prefix(profile_id: str) -> str:
+    cleaned = re.sub(r"[^A-Za-z0-9]+", "_", str(profile_id or "")).strip("_").upper()
+    return f"PSML_PROVIDER_{cleaned}" if cleaned else "PSML_PROVIDER"
+
+
+def parse_env_file(path: Path) -> tuple[dict[str, str], list[str]]:
+    values: dict[str, str] = {}
+    warnings: list[str] = []
+    if not path.exists():
+        return values, [f"env_file_missing:{path}"]
+    for line_no, raw_line in enumerate(path.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("export "):
+            line = line[len("export ") :].strip()
+        if "=" not in line:
+            warnings.append(f"env_line_ignored:{line_no}")
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip()
+        if not key:
+            warnings.append(f"env_empty_key:{line_no}")
+            continue
+        if (value.startswith('"') and value.endswith('"')) or (value.startswith("'") and value.endswith("'")):
+            value = value[1:-1]
+        values[key] = value
+    return values, warnings
+
+
+@contextmanager
+def temporary_env(overrides: dict[str, str]):
+    previous = {key: os.environ.get(key) for key in overrides}
+    try:
+        os.environ.update(overrides)
+        yield
+    finally:
+        for key, value in previous.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+
+
+def url_host(value: str) -> str:
+    parsed = urlparse(str(value or ""))
+    return parsed.netloc or ""
+
+
+def is_official_openai_base_url(value: str) -> bool:
+    return url_host(value).lower() == "api.openai.com"
+
+
+def profile_key_source(profile_id: str, env_values: dict[str, str], profile: ProviderProfile | None) -> dict[str, Any]:
+    if profile is None:
+        return {"source": "none", "env_var": None, "env_var_set": False, "direct_in_env_file": False}
+    prefix = profile_prefix(profile_id)
+    direct_key = env_values.get(f"{prefix}_API_KEY", "")
+    key_env = env_values.get(f"{prefix}_API_KEY_ENV") or os.environ.get(f"{prefix}_API_KEY_ENV")
+    if direct_key:
+        return {
+            "source": "direct_profile_api_key",
+            "env_var": None,
+            "env_var_set": False,
+            "direct_in_env_file": True,
+        }
+    if key_env:
+        return {
+            "source": "env_indirection",
+            "env_var": key_env,
+            "env_var_set": bool(os.environ.get(key_env)),
+            "direct_in_env_file": False,
+        }
+    if profile_id == "legacy_openai":
+        direct_legacy = bool(env_values.get("OPENAI_API_KEY", ""))
+        return {
+            "source": "legacy_openai_api_key",
+            "env_var": "OPENAI_API_KEY",
+            "env_var_set": bool(os.environ.get("OPENAI_API_KEY")),
+            "direct_in_env_file": direct_legacy,
+        }
+    return {"source": "missing", "env_var": None, "env_var_set": False, "direct_in_env_file": False}
+
+
+def profile_summary(role: str, profile: ProviderProfile | None, env_values: dict[str, str]) -> dict[str, Any] | None:
+    if profile is None:
+        return None
+    key_source = profile_key_source(profile.profile_id, env_values, profile)
+    return {
+        "role": role,
+        "profile_id": profile.profile_id,
+        "provider": profile.provider,
+        "api_mode": profile.api_mode,
+        "weak_model": profile.weak_model,
+        "strong_model": profile.strong_model,
+        "base_url_host": url_host(profile.base_url),
+        "base_url_is_official_openai": is_official_openai_base_url(profile.base_url),
+        "api_key_present": bool(profile.api_key),
+        "api_key_source": key_source["source"],
+        "api_key_env_var": key_source["env_var"],
+        "api_key_env_var_set": key_source["env_var_set"],
+        "api_key_directly_in_env_file": key_source["direct_in_env_file"],
+        "user_agent_present": bool(profile.user_agent),
+        "max_retries": profile.max_retries,
+        "retry_base_seconds": profile.retry_base_seconds,
+        "retry_max_seconds": profile.retry_max_seconds,
+    }
 
 
 def command_row(module: str, args: list[str]) -> dict[str, Any]:
@@ -293,6 +412,8 @@ def write_workflow_artifacts(
 
 
 def render_workflow_report(manifest: dict[str, Any]) -> str:
+    if manifest.get("workflow_command") == "doctor" and manifest.get("provider_config_doctor"):
+        return render_provider_doctor_report(manifest)
     step_lines = []
     for step in manifest.get("steps", []):
         status = step.get("status", "unknown")
@@ -323,6 +444,87 @@ def render_workflow_report(manifest: dict[str, Any]) -> str:
     )
 
 
+def render_provider_doctor_report(manifest: dict[str, Any]) -> str:
+    doctor = manifest["provider_config_doctor"]
+    selection = doctor.get("profile_selection") or {}
+    counts = doctor.get("diagnostic_counts") or {}
+    diagnostics = doctor.get("diagnostics") or []
+    profiles = doctor.get("profiles") or {}
+    live_api = doctor.get("live_api") or {}
+
+    def profile_lines(profile: dict[str, Any] | None) -> list[str]:
+        if not profile:
+            return ["- none"]
+        return [
+            f"- profile_id: `{profile.get('profile_id')}`",
+            f"- provider: `{profile.get('provider')}`",
+            f"- api_mode: `{profile.get('api_mode')}`",
+            f"- weak_model: `{profile.get('weak_model')}`",
+            f"- strong_model: `{profile.get('strong_model')}`",
+            f"- base_url_host: `{profile.get('base_url_host')}`",
+            f"- official_openai_base_url: `{profile.get('base_url_is_official_openai')}`",
+            f"- api_key_present: `{profile.get('api_key_present')}`",
+            f"- api_key_source: `{profile.get('api_key_source')}`",
+            f"- api_key_env_var: `{profile.get('api_key_env_var')}`",
+            f"- direct_key_in_env_file: `{profile.get('api_key_directly_in_env_file')}`",
+        ]
+
+    diagnostic_lines = [
+        f"- `{row.get('severity')}` `{row.get('check_id')}`: {row.get('message')}"
+        + (f" Remediation: {row.get('remediation')}" if row.get("remediation") else "")
+        for row in diagnostics
+    ] or ["- none"]
+
+    return "\n".join(
+        [
+            "# Provider / Config Doctor Report",
+            "",
+            f"- run_id: `{manifest.get('run_id')}`",
+            f"- status: `{doctor.get('diagnostic_status')}`",
+            f"- env_file: `{doctor.get('env_file')}`",
+            f"- provider_resolved: `{doctor.get('provider_resolved')}`",
+            f"- live_api_cli: `{live_api.get('allow_live_api_cli')}`",
+            f"- live_api_env: `{live_api.get('allow_live_api_env')}`",
+            f"- live_probe: `{live_api.get('doctor_performed_live_probe')}`",
+            "",
+            "## Profile Selection",
+            "",
+            f"- provider_profile_id: `{selection.get('provider_profile_id')}`",
+            f"- provider_fallback_profile_id: `{selection.get('provider_fallback_profile_id')}`",
+            f"- provider_fallback_enabled: `{selection.get('provider_fallback_enabled')}`",
+            f"- api_mode: `{selection.get('api_mode')}`",
+            f"- weak_model: `{selection.get('weak_model')}`",
+            f"- strong_model: `{selection.get('strong_model')}`",
+            "",
+            "## Primary Profile",
+            "",
+            *profile_lines(profiles.get("primary")),
+            "",
+            "## Fallback Profile",
+            "",
+            *profile_lines(profiles.get("fallback")),
+            "",
+            "## Diagnostic Counts",
+            "",
+            f"- error: `{counts.get('error', 0)}`",
+            f"- warning: `{counts.get('warning', 0)}`",
+            f"- pass: `{counts.get('pass', 0)}`",
+            f"- info: `{counts.get('info', 0)}`",
+            "",
+            "## Diagnostics",
+            "",
+            *diagnostic_lines,
+            "",
+            "## Boundary",
+            "",
+            "- Doctor does not call live provider APIs.",
+            "- Doctor does not print API key values.",
+            "- Fallback diagnostics cover provider/service fallback only, not output-quality fallback.",
+            "",
+        ]
+    )
+
+
 def run_status(args: argparse.Namespace) -> dict[str, Any]:
     workspace = resolve_path(args.workspace)
     status = workspace_status(workspace)
@@ -331,6 +533,244 @@ def run_status(args: argparse.Namespace) -> dict[str, Any]:
         run_id=args.run_id or default_run_id("status"),
         command="status",
         manifest={"status": "completed", "workspace_status": status},
+    )
+
+
+def build_provider_diagnostics(
+    *,
+    project_root: Path,
+    env_file: Path,
+    provider: str,
+    api_mode: str | None,
+    provider_profile: str | None,
+    fallback_provider_profile: str | None,
+    allow_live_api: bool,
+) -> dict[str, Any]:
+    env_values, env_warnings = parse_env_file(env_file)
+    diagnostics: list[dict[str, Any]] = []
+
+    def add_diag(severity: str, check_id: str, message: str, remediation: str = "") -> None:
+        diagnostics.append(
+            {
+                "severity": severity,
+                "check_id": check_id,
+                "message": message,
+                "remediation": remediation,
+            }
+        )
+
+    with temporary_env(env_values):
+        resolved_provider = provider or os.environ.get("OPENAI_PROVIDER") or "openai"
+        live_gate_env = env_truthy(os.environ.get("ALLOW_LIVE_API"))
+        try:
+            bundle = resolve_provider_profile_bundle(
+                provider=resolved_provider,
+                api_mode=api_mode,
+                weak_model=None,
+                strong_model=None,
+                provider_profile=provider_profile,
+                fallback_provider_profile=fallback_provider_profile,
+            )
+            bundle_error = None
+        except Exception as exc:
+            bundle = None
+            bundle_error = f"{type(exc).__name__}: {exc}"
+
+        if env_warnings:
+            for warning in env_warnings:
+                severity = "warning" if warning.startswith("env_line_ignored") else "info"
+                add_diag(severity, "env_parse", warning, "检查 .env 是否存在拼写或格式问题。")
+        if not env_file.exists():
+            add_diag("warning", "env_file_missing", f"Env file not found: {env_file}", "如需 live provider，复制 .env.example 为 .env 并配置本地变量。")
+        else:
+            add_diag("info", "env_file_loaded", f"Env file parsed: {env_file}", "")
+
+        direct_secret_keys = sorted(
+            key
+            for key, value in env_values.items()
+            if key.endswith("API_KEY") and value.strip()
+        )
+        for key in direct_secret_keys:
+            add_diag(
+                "warning",
+                "direct_api_key_in_env_file",
+                f"{key} is set directly in the env file.",
+                "更推荐使用 *_API_KEY_ENV 指向本机环境变量，避免复制或公开真实 key。",
+            )
+
+        if bundle_error:
+            add_diag("error", "provider_bundle_resolution_failed", bundle_error, "检查 provider profile 名称、api_mode 和数值格式。")
+            return {
+                "project_root": str(project_root),
+                "env_file": str(env_file),
+                "env_file_exists": env_file.exists(),
+                "provider_requested": provider,
+                "provider_resolved": resolved_provider,
+                "bundle_error": bundle_error,
+                "diagnostics": diagnostics,
+                "diagnostic_status": "fail",
+            }
+
+        assert bundle is not None
+        primary = profile_summary("primary", bundle.primary, env_values)
+        fallback = profile_summary("fallback", bundle.fallback, env_values)
+
+        if resolved_provider == "openai":
+            if not bundle.primary_profile_id:
+                add_diag("error", "primary_profile_missing", "OpenAI-compatible provider has no primary profile.", "设置 PSML_PROVIDER_DEFAULT 或 --provider-profile。")
+            elif bundle.primary_profile_id == "legacy_openai":
+                add_diag(
+                    "warning",
+                    "legacy_openai_profile",
+                    "Provider resolution is using legacy OPENAI_* fields.",
+                    "如需便宜 provider 主路，设置 PSML_PROVIDER_DEFAULT=claude_secondary。",
+                )
+            else:
+                add_diag("pass", "primary_profile_selected", f"Primary provider profile: {bundle.primary_profile_id}", "")
+
+            if bundle.primary and not bundle.primary.api_key:
+                add_diag("error", "primary_api_key_missing", f"Primary profile {bundle.primary.profile_id} has no API key.", "设置 profile 的 *_API_KEY_ENV 或本机环境变量。")
+            elif bundle.primary:
+                add_diag("pass", "primary_api_key_present", f"Primary profile {bundle.primary.profile_id} has an API key available.", "")
+
+            if primary and primary["base_url_is_official_openai"]:
+                severity = "warning" if bundle.primary_profile_id != "legacy_openai" else "info"
+                add_diag(
+                    severity,
+                    "primary_official_openai_base_url",
+                    f"Primary profile {bundle.primary_profile_id} points to api.openai.com.",
+                    "如果目标是低成本 provider，确认默认 profile 是否应为 claude_secondary 或其它兼容网关。",
+                )
+            elif primary:
+                add_diag("pass", "primary_non_openai_base_url", f"Primary base URL host: {primary['base_url_host']}", "")
+
+            if bundle.primary and bundle.primary.api_mode == "responses" and "claude" in f"{bundle.weak_model} {bundle.strong_model}".lower():
+                add_diag(
+                    "warning",
+                    "claude_model_with_responses_api_mode",
+                    "Claude-like model name is paired with responses API mode.",
+                    "OpenAI-compatible Claude gateways usually require chat_completions。",
+                )
+            if bundle.primary and bundle.primary.api_mode == "chat_completions":
+                add_diag("pass", "chat_completions_mode", "API mode is chat_completions.", "")
+
+            if bundle.primary and (not bundle.weak_model or not bundle.strong_model):
+                add_diag("warning", "model_id_missing", "Weak or strong model id is empty after profile resolution.", "设置 *_WEAK_MODEL 和 *_STRONG_MODEL。")
+            elif bundle.primary:
+                add_diag("pass", "model_ids_resolved", f"Weak={bundle.weak_model}; strong={bundle.strong_model}", "")
+
+            configured_fallback = fallback_provider_profile or os.environ.get("PSML_PROVIDER_FALLBACK") or os.environ.get("OPENAI_FALLBACK_PROVIDER_PROFILE") or ""
+            if configured_fallback and not bundle.fallback_enabled:
+                add_diag(
+                    "warning",
+                    "fallback_configured_but_disabled",
+                    f"Fallback profile {configured_fallback} is configured but has no usable API key.",
+                    "补齐 fallback profile key，或清空 fallback 配置避免误解。",
+                )
+            elif bundle.fallback_enabled:
+                add_diag("pass", "fallback_enabled", f"Fallback provider profile enabled: {bundle.fallback_profile_id}", "")
+            else:
+                add_diag("info", "fallback_not_configured", "No provider fallback profile is enabled.", "这是可接受状态；当前默认是便宜 provider 主路。")
+        else:
+            add_diag("info", "non_openai_provider", f"Provider {resolved_provider} does not use OpenAI-compatible profile resolution.", "")
+
+        if live_gate_env:
+            add_diag("warning", "env_allows_live_api", "ALLOW_LIVE_API=true in env.", "确认这是本机私有配置，不要进入 public mirror。")
+        elif allow_live_api:
+            add_diag("info", "cli_allows_live_api", "--allow-live-api was supplied to doctor.", "Doctor still does not call a live API.")
+        else:
+            add_diag("pass", "live_api_not_auto_enabled", "Live API is not enabled by CLI or env.", "")
+
+        public_risk_paths = [
+            project_root / "users",
+            project_root / "data",
+            project_root / "external_references",
+            project_root / "experiments",
+            project_root / "reports",
+        ]
+        private_dirs_present = [str(path) for path in public_risk_paths if path.exists()]
+        if private_dirs_present:
+            add_diag("info", "private_work_dirs_present", "Private/generated working directories exist in this repo.", "这是私有主仓可接受；同步 public mirror 时必须排除。")
+        else:
+            add_diag("pass", "private_work_dirs_absent", "No private/generated working directories found at project root.", "")
+
+        status = "fail" if any(row["severity"] == "error" for row in diagnostics) else "warn" if any(row["severity"] == "warning" for row in diagnostics) else "pass"
+        return {
+            "project_root": str(project_root),
+            "env_file": str(env_file),
+            "env_file_exists": env_file.exists(),
+            "provider_requested": provider,
+            "provider_resolved": resolved_provider,
+            "live_api": {
+                "allow_live_api_cli": bool(allow_live_api),
+                "allow_live_api_env": live_gate_env,
+                "doctor_performed_live_probe": False,
+            },
+            "legacy_openai": {
+                "openai_provider": os.environ.get("OPENAI_PROVIDER"),
+                "openai_api_mode": os.environ.get("OPENAI_API_MODE"),
+                "openai_model_weak": os.environ.get("OPENAI_MODEL_WEAK"),
+                "openai_model_strong": os.environ.get("OPENAI_MODEL_STRONG"),
+                "openai_base_url_host": url_host(os.environ.get("OPENAI_BASE_URL", "")),
+                "openai_api_key_present": bool(os.environ.get("OPENAI_API_KEY")),
+                "openai_api_key_directly_in_env_file": bool(env_values.get("OPENAI_API_KEY", "")),
+            },
+            "profile_selection": {
+                "provider_profile_arg": provider_profile,
+                "fallback_provider_profile_arg": fallback_provider_profile,
+                "psml_provider_default": os.environ.get("PSML_PROVIDER_DEFAULT"),
+                "psml_provider_fallback": os.environ.get("PSML_PROVIDER_FALLBACK"),
+                **bundle.manifest_fields(),
+                "api_mode": bundle.api_mode,
+                "weak_model": bundle.weak_model,
+                "strong_model": bundle.strong_model,
+            },
+            "profiles": {
+                "primary": primary,
+                "fallback": fallback,
+            },
+            "diagnostics": diagnostics,
+            "diagnostic_counts": {
+                "error": sum(1 for row in diagnostics if row["severity"] == "error"),
+                "warning": sum(1 for row in diagnostics if row["severity"] == "warning"),
+                "pass": sum(1 for row in diagnostics if row["severity"] == "pass"),
+                "info": sum(1 for row in diagnostics if row["severity"] == "info"),
+            },
+            "diagnostic_status": status,
+        }
+
+
+def run_doctor(args: argparse.Namespace) -> dict[str, Any]:
+    project_root = resolve_path(args.project_root)
+    workspace = resolve_path(args.workspace) if args.workspace else project_root
+    env_file = resolve_path(args.env_file) if Path(args.env_file).is_absolute() else (project_root / args.env_file).resolve()
+    doctor = build_provider_diagnostics(
+        project_root=project_root,
+        env_file=env_file,
+        provider=args.provider,
+        api_mode=args.api_mode,
+        provider_profile=args.provider_profile,
+        fallback_provider_profile=args.fallback_provider_profile,
+        allow_live_api=args.allow_live_api,
+    )
+    return write_workflow_artifacts(
+        workspace=workspace,
+        run_id=args.run_id or default_run_id("doctor"),
+        command="doctor",
+        manifest={
+            "status": doctor["diagnostic_status"],
+            "provider_config_doctor": doctor,
+            "steps": [
+                {
+                    "name": "provider_config_doctor",
+                    "status": doctor["diagnostic_status"],
+                    "manifest": {
+                        "diagnostic_counts": doctor.get("diagnostic_counts"),
+                        "profile_selection": doctor.get("profile_selection"),
+                    },
+                }
+            ],
+        },
     )
 
 
@@ -656,6 +1096,17 @@ def build_parser() -> argparse.ArgumentParser:
     status.add_argument("--workspace", required=True)
     status.add_argument("--run-id", default=None)
     status.set_defaults(func=run_status)
+
+    doctor = subparsers.add_parser("doctor")
+    doctor.add_argument("--workspace", default=None)
+    doctor.add_argument("--run-id", default=None)
+    doctor.add_argument("--env-file", default=".env")
+    doctor.add_argument("--provider", default=None, choices=["mock", "external_jsonl", "openai"])
+    doctor.add_argument("--api-mode", default=None, choices=["responses", "chat_completions"])
+    doctor.add_argument("--provider-profile", default=None)
+    doctor.add_argument("--fallback-provider-profile", default=None)
+    doctor.add_argument("--allow-live-api", action="store_true")
+    doctor.set_defaults(func=run_doctor)
 
     build_full = subparsers.add_parser("build-full")
     build_full.add_argument("--workspace", required=True)

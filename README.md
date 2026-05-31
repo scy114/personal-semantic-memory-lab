@@ -82,6 +82,7 @@ Daily use should start from the thin workflow runner:
 
 ```powershell
 python -m tools.workflow_runner --help
+python -m tools.workflow_runner doctor --workspace <workspace>
 python -m tools.workflow_runner status --workspace <workspace>
 ```
 
@@ -116,6 +117,10 @@ python -m tools.workflow_runner query `
 Live provider runs are explicitly gated and require `--allow-live-api`.
 Mock and regex graph extraction are smoke/baseline paths only; they are not
 quality proof or the main fidelity path.
+
+`doctor` is offline by default. It checks provider profiles, fallback state,
+key source, base URL host, API mode, model IDs, live gate state, and common
+public-release risks without calling a live provider API.
 
 ## Provider Configuration
 
